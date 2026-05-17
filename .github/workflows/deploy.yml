@@ -17,26 +17,37 @@ jobs:
         run: |
           set -e
           DOCKER="/share/CACHEDEV5_DATA/.qpkg/container-station/usr/bin/.libs/docker"
+          DEPLOY_DIR="/share/CACHEDEV1_DATA/Public/ElevatorSystem"
 
-          # The runner container has docker CLI + socket access but no /share paths.
-          # Launch an Alpine helper container with NAS paths mounted, install docker CLI
-          # (which communicates via the socket), rsync code, then run compose.
+          # The runner itself may be containerized (Container Station) without direct
+          # access to /share paths or the docker socket.  Launch an Alpine helper with
+          # everything mounted, install tools, then run compose.
           docker run --rm \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v /share/CACHEDEV1_DATA:/share/CACHEDEV1_DATA \
             -v /share/CACHEDEV5_DATA:/share/CACHEDEV5_DATA \
             -v ${{ github.workspace }}:/src:ro \
-            -w /share/CACHEDEV1_DATA/Public/ElevatorSystem \
             alpine:3.19 sh -c "
-              apk add --no-cache rsync git docker-cli
-              echo '=== Syncing code from checkout ==='
-              rsync -a --delete --exclude='node_modules' --exclude='.git' --exclude='uploads' /src/ ./
+              set -e
+              apk add --no-cache rsync docker-cli
+
+              mkdir -p '$DEPLOY_DIR'
+
+              echo '=== Syncing code ==='
+              rsync -a --delete --exclude='node_modules' --exclude='.git' --exclude='uploads' /src/ '$DEPLOY_DIR/'
+
+              cd '$DEPLOY_DIR'
+
+              mkdir -p uploads/photos uploads/videos uploads/contracts uploads/exports
+
               echo '=== Building and restarting services ==='
-              docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
+              $DOCKER compose -f docker-compose.prod.yml up -d --build --remove-orphans
+
               echo '=== Cleaning old images ==='
-              docker image prune -f
+              $DOCKER image prune -f
+
               echo '=== Deployment complete ==='
-              docker compose -f docker-compose.prod.yml ps
+              $DOCKER compose -f docker-compose.prod.yml ps
             "
 
       - name: Verify deployment
