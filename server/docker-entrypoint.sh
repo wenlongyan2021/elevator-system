@@ -18,4 +18,4 @@ if [ -f prisma/seed.js ]; then
 fi
 
 echo "Starting application..."
-exec node dist/main
+exec node dist/src/main
