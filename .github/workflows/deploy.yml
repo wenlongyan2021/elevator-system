@@ -13,24 +13,36 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy via SSH
+      - name: Sync code to NAS project directory
         run: |
           set -e
           DOCKER="/share/CACHEDEV5_DATA/.qpkg/container-station/usr/bin/.libs/docker"
+          PROJECT_DIR="/share/CACHEDEV1_DATA/Public/ElevatorSystem"
 
-          cd /share/CACHEDEV1_DATA/Public/ElevatorSystem
+          # Use a privileged container with NAS paths mounted to sync code and run compose
+          $DOCKER run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v /share/CACHEDEV1_DATA:/share/CACHEDEV1_DATA \
+            -v /share/CACHEDEV5_DATA:/share/CACHEDEV5_DATA \
+            -v ${{ github.workspace }}:/src:ro \
+            -w /share/CACHEDEV1_DATA/Public/ElevatorSystem \
+            alpine:3.19 \
+            sh -c "
+              apk add --no-cache rsync git
+              echo '=== Syncing code from checkout ==='
+              rsync -a --delete --exclude='node_modules' --exclude='.git' --exclude='uploads' /src/ ./
+              echo '=== Pulling latest from remote ==='
+              git pull origin main || echo 'Git pull skipped (fresh sync)'
+              echo '=== Building and restarting services ==='
+              /share/CACHEDEV5_DATA/.qpkg/container-station/usr/bin/.libs/docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
+              echo '=== Cleaning old images ==='
+              /share/CACHEDEV5_DATA/.qpkg/container-station/usr/bin/.libs/docker image prune -f
+              echo '=== Deployment complete ==='
+              /share/CACHEDEV5_DATA/.qpkg/container-station/usr/bin/.libs/docker compose -f docker-compose.prod.yml ps
+            "
 
-          # Pull latest code
-          git pull origin main
-
-          # Ensure data directories exist
-          mkdir -p uploads/photos uploads/videos uploads/contracts uploads/exports
-
-          # Build and restart services
-          $DOCKER compose -f docker-compose.prod.yml up -d --build --remove-orphans
-
-          # Clean old images
-          $DOCKER image prune -f
-
-          echo "=== Deployment complete ==="
-          $DOCKER compose -f docker-compose.prod.yml ps
+      - name: Verify deployment
+        run: |
+          sleep 15
+          DOCKER="/share/CACHEDEV5_DATA/.qpkg/container-station/usr/bin/.libs/docker"
+          $DOCKER ps --filter "name=elevator-" --format "{{.Names}}: {{.Status}}"
