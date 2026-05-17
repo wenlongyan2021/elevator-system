@@ -19,38 +19,35 @@ jobs:
           DOCKER="/share/CACHEDEV5_DATA/.qpkg/container-station/usr/bin/.libs/docker"
           DEPLOY_DIR="/share/CACHEDEV1_DATA/Public/ElevatorSystem"
 
-          # The runner itself may be containerized (Container Station) without direct
-          # access to /share paths or the docker socket.  Launch an Alpine helper with
-          # everything mounted, install tools, then run compose.
-          docker run --rm \
-            -v /var/run/docker.sock:/var/run/docker.sock \
-            -v /share/CACHEDEV1_DATA:/share/CACHEDEV1_DATA \
-            -v /share/CACHEDEV5_DATA:/share/CACHEDEV5_DATA \
-            -v ${{ github.workspace }}:/src:ro \
-            alpine:3.19 sh -c "
-              set -e
-              apk add --no-cache rsync docker-cli
+          # Create deploy directory if first time
+          mkdir -p "$DEPLOY_DIR"
 
-              mkdir -p '$DEPLOY_DIR'
+          # Sync code from checkout (avoids git pull credential prompt)
+          rsync -a --delete \
+            --exclude='node_modules' \
+            --exclude='.git' \
+            --exclude='dist' \
+            --exclude='uploads' \
+            "$GITHUB_WORKSPACE/" "$DEPLOY_DIR/"
 
-              echo '=== Syncing code ==='
-              rsync -a --delete --exclude='node_modules' --exclude='.git' --exclude='uploads' /src/ '$DEPLOY_DIR/'
+          cd "$DEPLOY_DIR"
 
-              cd '$DEPLOY_DIR'
+          # Ensure data directories exist
+          mkdir -p uploads/photos uploads/videos uploads/contracts uploads/exports
 
-              mkdir -p uploads/photos uploads/videos uploads/contracts uploads/exports
+          # Build and restart services
+          $DOCKER compose -f docker-compose.prod.yml up -d --build --remove-orphans
 
-              echo '=== Building and restarting services ==='
-              $DOCKER compose -f docker-compose.prod.yml up -d --build --remove-orphans
+          # Clean old images
+          $DOCKER image prune -f
 
-              echo '=== Cleaning old images ==='
-              $DOCKER image prune -f
-
-              echo '=== Deployment complete ==='
-              $DOCKER compose -f docker-compose.prod.yml ps
-            "
+          echo "=== Deployment complete ==="
+          $DOCKER compose -f docker-compose.prod.yml ps
 
       - name: Verify deployment
         run: |
-          sleep 15
-          docker ps --filter "name=elevator-" --format "{{.Names}}: {{.Status}}"
+          sleep 10
+          echo "=== Checking service health ==="
+          DOCKER="/share/CACHEDEV5_DATA/.qpkg/container-station/usr/bin/.libs/docker"
+          $DOCKER ps --filter "name=elevator-" --format "table {{.Names}}\t{{.Status}}"
+          echo "=== Done ==="
