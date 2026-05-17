@@ -18,21 +18,26 @@ jobs:
           set -e
           DEPLOY_DIR="/share/CACHEDEV1_DATA/Public/ElevatorSystem"
 
-          # Launch Alpine helper with docker socket + NAS mounts.
-          # The runner is containerized by Container Station and doesn't have
-          # direct access to /share paths, so we need a helper container.
-          docker run --rm \
+          # Pipe code via tar — volume mounts from a containerized runner refer to
+          # the Docker host, not the runner's filesystem, so -v ${{ github.workspace }}
+          # would mount an empty/nonexistent host path.
+          tar cz \
+            --exclude='node_modules' \
+            --exclude='.git' \
+            --exclude='uploads' \
+            -C "$GITHUB_WORKSPACE" . | \
+          docker run --rm -i \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v /share/CACHEDEV1_DATA:/share/CACHEDEV1_DATA \
-            -v ${{ github.workspace }}:/src:ro \
             alpine:3.19 sh -c "
               set -e
-              apk add --no-cache rsync docker-cli docker-compose
+              apk add --no-cache rsync docker-cli docker-compose tar
+
+              mkdir -p /tmp/code
+              tar xzf - -C /tmp/code
 
               mkdir -p '$DEPLOY_DIR'
-
-              echo '=== Syncing code ==='
-              rsync -a --delete --exclude='node_modules' --exclude='.git' --exclude='uploads' /src/ '$DEPLOY_DIR/'
+              rsync -a --delete /tmp/code/ '$DEPLOY_DIR/'
 
               cd '$DEPLOY_DIR'
               mkdir -p uploads/photos uploads/videos uploads/contracts uploads/exports
