@@ -18,8 +18,9 @@ jobs:
           set -e
           DOCKER="/share/CACHEDEV5_DATA/.qpkg/container-station/usr/bin/.libs/docker"
 
-          # Sync checked-out code to NAS project directory using a helper container
-          # The runner container has docker CLI + socket but no /share paths
+          # The runner container has docker CLI + socket access but no /share paths.
+          # Launch an Alpine helper container with NAS paths mounted, install docker CLI
+          # (which communicates via the socket), rsync code, then run compose.
           docker run --rm \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v /share/CACHEDEV1_DATA:/share/CACHEDEV1_DATA \
@@ -27,15 +28,15 @@ jobs:
             -v ${{ github.workspace }}:/src:ro \
             -w /share/CACHEDEV1_DATA/Public/ElevatorSystem \
             alpine:3.19 sh -c "
-              apk add --no-cache rsync git
+              apk add --no-cache rsync git docker-cli
               echo '=== Syncing code from checkout ==='
               rsync -a --delete --exclude='node_modules' --exclude='.git' --exclude='uploads' /src/ ./
               echo '=== Building and restarting services ==='
-              /share/CACHEDEV5_DATA/.qpkg/container-station/usr/bin/.libs/docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
+              docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
               echo '=== Cleaning old images ==='
-              /share/CACHEDEV5_DATA/.qpkg/container-station/usr/bin/.libs/docker image prune -f
+              docker image prune -f
               echo '=== Deployment complete ==='
-              /share/CACHEDEV5_DATA/.qpkg/container-station/usr/bin/.libs/docker compose -f docker-compose.prod.yml ps
+              docker compose -f docker-compose.prod.yml ps
             "
 
       - name: Verify deployment
