@@ -18,7 +18,7 @@ jobs:
           set -e
           DOCKER="/share/CACHEDEV5_DATA/.qpkg/container-station/usr/bin/.libs/docker"
 
-          cd /share/ElevatorSystem
+          cd /share/CACHEDEV1_DATA/Public/ElevatorSystem
 
           # Pull latest code
           git pull origin main
