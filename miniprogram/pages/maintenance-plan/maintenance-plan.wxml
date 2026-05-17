@@ -1,0 +1,46 @@
+<scroll-view scroll-y class="page" bindscrolltolower="loadMore">
+  <!-- Filters -->
+  <view class="filter-bar">
+    <view class="filter-item {{filterStatus === '' ? 'active' : ''}}" bindtap="setFilter" data-status="">全部</view>
+    <view class="filter-item {{filterStatus === 'PENDING' ? 'active' : ''}}" bindtap="setFilter" data-status="PENDING">待执行</view>
+    <view class="filter-item {{filterStatus === 'IN_PROGRESS' ? 'active' : ''}}" bindtap="setFilter" data-status="IN_PROGRESS">执行中</view>
+    <view class="filter-item {{filterStatus === 'COMPLETED' ? 'active' : ''}}" bindtap="setFilter" data-status="COMPLETED">已完成</view>
+  </view>
+
+  <!-- List -->
+  <view wx:if="{{loading && list.length === 0}}" class="loading-state">
+    <text class="text-secondary">加载中...</text>
+  </view>
+
+  <view wx:if="{{!loading && list.length === 0}}" class="empty-state card">
+    <text class="text-secondary">暂无维保计划</text>
+  </view>
+
+  <view wx:for="{{list}}" wx:key="id" class="plan-item card">
+    <view class="plan-header">
+      <view class="plan-elevator">
+        <text class="plan-elevator-code">{{item.elevator?.regCode || item.elevatorId || '--'}}</text>
+        <text class="plan-elevator-building" wx:if="{{item.elevator?.brand}}">{{item.elevator.brand}} {{item.elevator.model}}</text>
+      </view>
+      <text class="tag tag-{{statusType(item.status)}}">{{statusText(item.status)}}</text>
+    </view>
+    <view class="plan-info">
+      <text class="info-line">计划类型: {{planTypeText(item.planType)}}</text>
+      <text class="info-line">计划日期: {{item.planDate?.slice(0, 10) || '-'}}</text>
+      <text wx:if="{{item.remark}}" class="info-line">备注: {{item.remark}}</text>
+    </view>
+    <view class="plan-footer">
+      <view class="plan-actions">
+        <button wx:if="{{item.status === 'PENDING'}}" class="btn-sm btn-primary" bindtap="startPlan" data-id="{{item.id}}">开始执行</button>
+        <button wx:if="{{item.status === 'IN_PROGRESS'}}" class="btn-sm btn-success" bindtap="completePlan" data-id="{{item.id}}">完成</button>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{hasMore}}" class="load-more">
+    <text class="text-secondary">上拉加载更多</text>
+  </view>
+  <view wx:if="{{!hasMore && list.length > 0}}" class="load-more">
+    <text class="text-secondary">没有更多了</text>
+  </view>
+</scroll-view>

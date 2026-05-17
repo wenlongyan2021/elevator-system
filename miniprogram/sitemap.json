@@ -1,0 +1,4 @@
+{
+  "desc": "电梯管理系统",
+  "rules": [{ "action": "allow", "page": "*" }]
+}

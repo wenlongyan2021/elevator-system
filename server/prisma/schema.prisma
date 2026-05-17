@@ -1,0 +1,556 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== Organization & Users ====================
+
+enum Role {
+  PROJECT_MANAGER
+  PROJECT_SUPERVISOR
+  CUSTOMER_SERVICE
+  ENGINEER
+  SECURITY
+  ELEVATOR_MAINTAINER
+  SAFETY_OFFICER
+  SAFETY_DIRECTOR
+  ADMIN
+}
+
+model Organization {
+  id        String    @id @default(cuid())
+  name      String
+  address   String?
+  phone     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  projects  Project[]
+}
+
+model Project {
+  id            String   @id @default(cuid())
+  name          String
+  address       String?
+  contactName   String?
+  contactPhone  String?
+  organizationId String
+  organization  Organization @relation(fields: [organizationId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  buildings Building[]
+  elevators Elevator[]
+  users     UserProject[]
+}
+
+model Building {
+  id        String   @id @default(cuid())
+  name      String
+  projectId  String
+  project   Project  @relation(fields: [projectId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id                String    @id @default(cuid())
+  name              String
+  phone             String    @unique
+  password          String
+  avatar            String?
+  wxOpenId          String?   @unique
+  role              Role      @default(ADMIN)
+  title             String?   // 职位名称
+  email             String?
+  isActive          Boolean   @default(true)
+  supervisorId      String?
+  supervisor        User?     @relation("UserSupervision", fields: [supervisorId], references: [id])
+  subordinates      User[]    @relation("UserSupervision")
+  maintenanceUnitId String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  projects      UserProject[]
+  elevatorCS    Elevator[]   @relation("CustomerService")
+  elevatorSO    Elevator[]   @relation("SafetyOfficer")
+  elevatorSD    Elevator[]   @relation("SafetyDirector")
+  elevatorMT    Elevator[]   @relation("Maintainer")
+  repairOrders          RepairOrder[] @relation("Reporter")
+  repairAssignments     RepairOrder[] @relation("Assignee")
+  workflowApprovals     WorkflowNode[]
+  inspectionTasks       InspectionTask[]
+}
+
+// User-Project many-to-many
+model UserProject {
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@id([userId, projectId])
+}
+
+// ==================== Elevator Ledger ====================
+
+enum ElevatorStatus {
+  RUNNING
+  STOPPED
+  MAINTENANCE
+  FAULT
+}
+
+model Elevator {
+  id                String        @id @default(cuid())
+  regCode           String        @unique
+  assetNo           String?       // 资产编号
+  brand             String?       // 品牌
+  model             String?       // 型号
+  floorCount        Int?          // 层站
+  capacity          Int?          // 载重(kg)
+  speed             Float?        // 速度(m/s)
+  installDate       DateTime?     // 安装日期
+  lastInspectDate   DateTime?     // 最近年检
+  nextInspectDate   DateTime?     // 下次年检
+  manufactureNo     String?       // 出厂编号
+  status            ElevatorStatus @default(RUNNING)
+  locationDesc      String?       // 位置描述
+  latitude          Float?        // GPS纬度
+  longitude         Float?        // GPS经度
+
+  projectId         String
+  project           Project       @relation(fields: [projectId], references: [id])
+  building          String?       // 楼栋
+
+  customerServiceId String?
+  customerService   User?         @relation("CustomerService", fields: [customerServiceId], references: [id])
+  safetyOfficerId   String?
+  safetyOfficer     User?         @relation("SafetyOfficer", fields: [safetyOfficerId], references: [id])
+  safetyDirectorId  String?
+  safetyDirector    User?         @relation("SafetyDirector", fields: [safetyDirectorId], references: [id])
+  maintainerId      String?
+  maintainer        User?         @relation("Maintainer", fields: [maintainerId], references: [id])
+
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  contracts         ContractElevator[]
+  repairOrders      RepairOrder[]
+  qrCode            QRCode?
+  inspectionTasks   InspectionTask[]
+  faultRecords      FaultRecord[]
+  monthlyFeeItems   MonthlyFeeItem[]
+  maintenancePlans  MaintenancePlan[]
+}
+
+// ==================== Contract Management ====================
+
+model Contract {
+  id              String        @id @default(cuid())
+  contractNo      String        @unique
+  name            String
+  maintenanceUnitId String
+  maintenanceUnit MaintenanceUnit @relation(fields: [maintenanceUnitId], references: [id])
+  startDate       DateTime
+  endDate         DateTime
+  monthlyPrice    Decimal       @default(0)    // 台/月单价
+  totalPrice      Decimal       @default(0)    // 合同总价
+  paymentCycle    String        @default("monthly") // monthly/quarterly/yearly
+  evaluationStd   String?       // 考核标准(JSON)
+  status          ContractStatus @default(ACTIVE)
+  remark          String?
+  signatory       String?       // 签约方
+  contactPerson   String?       // 联系人
+  contactPhone    String?       // 联系电话
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  elevators ContractElevator[]
+  parts      ContractPart[]
+  evaluations ContractEvaluation[]
+
+  @@index([maintenanceUnitId])
+  @@index([status])
+  @@index([startDate, endDate])
+}
+
+enum ContractStatus {
+  DRAFT
+  ACTIVE
+  EXPIRED
+  TERMINATED
+}
+
+model ContractElevator {
+  contractId  String
+  contract    Contract @relation(fields: [contractId], references: [id])
+  elevatorId  String
+  elevator    Elevator @relation(fields: [elevatorId], references: [id])
+  startDate   DateTime @default(now())
+
+  @@id([contractId, elevatorId])
+}
+
+model ContractPart {
+  id         String    @id @default(cuid())
+  contractId String
+  contract   Contract  @relation(fields: [contractId], references: [id])
+  type       PartType  // CHARGE / FREE
+  name       String    // 配件名称
+  model      String?   // 型号
+  unit       String    // 单位
+  quantity   Int       @default(1)
+  price      Decimal?  // 单价(仅收费配件)
+  remark     String?
+  createdAt  DateTime  @default(now())
+}
+
+enum PartType {
+  CHARGE
+  FREE
+}
+
+model ContractEvaluation {
+  id         String   @id @default(cuid())
+  contractId String
+  contract   Contract @relation(fields: [contractId], references: [id])
+  month      DateTime // 考核月份
+  score      Int      // 分值(0-100)
+  content    String?  // 考核内容
+  evaluator  String?  // 考核人
+  remark     String?  // 备注
+  createdAt  DateTime @default(now())
+}
+
+// ==================== Maintenance Unit ====================
+
+model MaintenanceUnit {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  contactName  String?
+  contactPhone String?
+  address     String?
+  level       String?  // 资质等级
+  score       Float?   // 综合评分(0-100)
+  scoreLevel  String?  // 评分等级: 优秀/良好/合格/待改进
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  contracts       Contract[]
+}
+
+// ==================== Repair & Workflow ====================
+
+enum Urgency {
+  EMERGENCY // 紧急
+  NORMAL    // 普通
+  LOW       // 一般
+}
+
+enum RepairStatus {
+  PENDING_ACCEPT      // 待维保员接单
+  PENDING_REPAIR      // 维修中
+  PENDING_PARTS_VERIFY // 待确认配件
+  PENDING_SUPERVISOR  // 待主管审批
+  PENDING_MANAGER     // 待经理审批
+  PENDING_FUND_REVIEW // 待补充维修资金材料
+  APPROVED            // 已批准
+  RESOLVED            // 已修复
+  CLOSED              // 已完结
+  REJECTED            // 已驳回
+}
+
+model RepairOrder {
+  id          String      @id @default(cuid())
+  orderNo     String      @unique
+  elevatorId  String
+  elevator    Elevator    @relation(fields: [elevatorId], references: [id])
+  reporterId  String
+  reporter    User        @relation("Reporter", fields: [reporterId], references: [id])
+  assigneeId  String?     // 接单维保员
+  assignee    User?       @relation("Assignee", fields: [assigneeId], references: [id])
+  status      RepairStatus @default(PENDING_ACCEPT)
+  stopType    String?     // 停梯/未停梯
+  urgency     Urgency     @default(NORMAL)
+  description String
+  isPartsNeeded Boolean?  // 是否需要更换配件
+  resolveNote String?     // 修复说明
+  completedAt DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  mediaFiles  RepairMedia[]
+  parts       RepairPart[]
+  workflow    WorkflowInstance?
+  costs       RepairCost[]
+
+  @@index([elevatorId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model RepairMedia {
+  id          String     @id @default(cuid())
+  repairId    String
+  repair      RepairOrder @relation(fields: [repairId], references: [id])
+  fileType    String     // IMAGE / VIDEO
+  @@index([repairId])
+  filePath    String
+  thumbnail   String?    // 缩略图
+  watermark   String?    // 水印图路径
+  fileSize    Int?
+  createdAt   DateTime   @default(now())
+}
+
+model RepairPart {
+  id          String     @id @default(cuid())
+  repairId    String
+  repair      RepairOrder @relation(fields: [repairId], references: [id])
+  partName    String
+  partModel   String?
+  quantity    Int        @default(1)
+  price       Decimal    @default(0)
+  costType    CostType   @default(CONTRACT_IN)
+  remark      String?
+  createdAt   DateTime   @default(now())
+
+  @@index([repairId])
+  @@index([partName, partModel])
+}
+
+enum CostType {
+  FREE            // 免费
+  CONTRACT_IN     // 合同内
+  CONTRACT_OUT    // 合同外
+  PUBLIC_FUND     // 公共维修资金
+}
+
+model RepairCost {
+  id          String     @id @default(cuid())
+  repairId    String
+  repair      RepairOrder @relation(fields: [repairId], references: [id])
+  costType    CostType
+  amount      Decimal
+  description String?
+  createdAt   DateTime   @default(now())
+
+  @@index([repairId])
+}
+
+// ==================== Workflow ====================
+
+enum WorkflowType {
+  REPAIR
+  FUND_REPAIR
+}
+
+enum WorkflowStatus {
+  ACTIVE
+  COMPLETED
+  REJECTED
+}
+
+model WorkflowInstance {
+  id            String       @id @default(cuid())
+  workflowType  WorkflowType
+  repairOrderId String       @unique
+  repairOrder   RepairOrder  @relation(fields: [repairOrderId], references: [id])
+  currentStep   String
+  status        WorkflowStatus @default(ACTIVE)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  nodes   WorkflowNode[]
+  materials FundMaterial[]
+}
+
+model WorkflowNode {
+  id          String   @id @default(cuid())
+  instanceId  String
+  instance    WorkflowInstance @relation(fields: [instanceId], references: [id])
+  stepName    String
+  approverId  String?
+  approver    User?    @relation(fields: [approverId], references: [id])
+  action      String?  // APPROVE / REJECT / SUBMIT
+  comment     String?
+  createdAt   DateTime @default(now())
+
+  @@index([instanceId])
+  @@index([approverId])
+}
+
+model FundMaterial {
+  id          String   @id @default(cuid())
+  instanceId  String
+  instance    WorkflowInstance @relation(fields: [instanceId], references: [id])
+  materialType String  // ANNOUNCEMENT / QUOTATION / REVIEW_PRICE / PHOTO
+  title       String
+  filePath    String?
+  content     String?  // 模板生成的内容
+  status      String   @default("PENDING") // PENDING / SUBMITTED / APPROVED
+  createdAt   DateTime @default(now())
+
+  @@index([instanceId])
+}
+
+// ==================== QR Code ====================
+
+model QRCode {
+  id          String   @id @default(cuid())
+  elevatorId  String   @unique
+  elevator    Elevator @relation(fields: [elevatorId], references: [id])
+  code        String   @unique
+  qrImagePath String?
+  createdAt   DateTime @default(now())
+}
+
+// ==================== Inspection ====================
+
+enum InspectionType {
+  PATROL      // 巡查
+  MAINTAIN_BEFORE // 维保前
+  MAINTAIN_DURING // 维保中
+  MAINTAIN_AFTER  // 维保后
+}
+
+model InspectionTask {
+  id          String         @id @default(cuid())
+  elevatorId  String
+  elevator    Elevator       @relation(fields: [elevatorId], references: [id])
+  inspectorId String
+  inspector   User           @relation(fields: [inspectorId], references: [id])
+  type        InspectionType @default(PATROL)
+  location    String?        // GPS位置描述
+  latitude    Float?
+  longitude   Float?
+  note        String?
+  createdAt   DateTime       @default(now())
+  photos      InspectionPhoto[]
+
+  @@index([elevatorId])
+  @@index([inspectorId])
+  @@index([createdAt])
+}
+
+model InspectionPhoto {
+  id            String   @id @default(cuid())
+  taskId        String
+  task          InspectionTask @relation(fields: [taskId], references: [id])
+  filePath      String
+  watermarkPath String?  // 水印图片
+  fileSize      Int?
+  createdAt     DateTime @default(now())
+
+  @@index([taskId])
+}
+
+// ==================== Fault Statistics ====================
+
+enum FaultType {
+  DOOR_FAULT       // 门系统故障
+  TRACTION_FAULT   // 曳引系统
+  CONTROL_FAULT    // 控制系统
+  SAFETY_FAULT     // 安全保护
+  TRAPPED          // 困人
+  OTHER            // 其他
+}
+
+model FaultRecord {
+  id          String    @id @default(cuid())
+  elevatorId  String
+  elevator    Elevator  @relation(fields: [elevatorId], references: [id])
+  faultType   FaultType @default(OTHER)
+  description String
+  isTrapped   Boolean   @default(false) // 是否困人
+  trappedCount Int?     // 困人数
+  downtime    Int?      // 停梯时长(分钟)
+  repairOrderId String?
+  createdAt   DateTime  @default(now())
+
+  @@index([elevatorId])
+  @@index([faultType])
+  @@index([createdAt])
+}
+
+// ==================== Fee ====================
+
+model MonthlyFee {
+  id              String   @id @default(cuid())
+  maintenanceUnitId String
+  projectId       String
+  yearMonth       DateTime // 年月
+  elevatorCount   Int      // 电梯数量
+  unitPrice       Decimal  // 台/月单价
+  totalAmount     Decimal  // 应付总额
+  repairCostTotal Decimal  @default(0) // 维修费合计
+  status          String   @default("PENDING") // PENDING / CONFIRMED / PAID
+  remark          String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+	items           MonthlyFeeItem[]
+  @@unique([maintenanceUnitId, yearMonth])
+  @@index([status])
+}
+
+model MonthlyFeeItem {
+  id          String   @id @default(cuid())
+  monthlyFeeId String
+  monthlyFee  MonthlyFee @relation(fields: [monthlyFeeId], references: [id])
+  elevatorId  String
+  elevator    Elevator   @relation(fields: [elevatorId], references: [id])
+  costType    CostType
+  amount      Decimal
+  description String?
+  createdAt   DateTime @default(now())
+}
+
+// ==================== Maintenance Plan ====================
+
+model MaintenancePlan {
+  id              String   @id @default(cuid())
+  elevatorId      String
+  elevator        Elevator @relation(fields: [elevatorId], references: [id])
+  planDate        DateTime
+  planType        String   // HALF_MONTHLY / MONTHLY / QUARTERLY / HALF_YEARLY / YEARLY
+  maintainerId    String
+  status          String   @default("PENDING") // PENDING / IN_PROGRESS / COMPLETED
+  completedAt     DateTime?
+  remark          String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([elevatorId])
+  @@index([maintainerId])
+  @@index([status])
+  @@index([planDate])
+}
+
+// ==================== Notifications ====================
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  content   String?
+  type      String   // REPAIR / INSPECT / CONTRACT / SYSTEM
+  refId     String?  // 关联业务ID
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+  @@index([type])
+  @@index([createdAt])
+}
+
+// ==================== System ====================
+
+model SystemConfig {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+}

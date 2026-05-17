@@ -1,0 +1,135 @@
+<view class="page">
+  <!-- Tabs -->
+  <view class="tab-bar">
+    <view class="tab-item {{activeTab === 'list' ? 'active' : ''}}" bindtap="switchTab" data-tab="list">
+      <text>报修列表</text>
+    </view>
+    <view class="tab-item {{activeTab === 'create' ? 'active' : ''}}" bindtap="switchTab" data-tab="create">
+      <text>新建报修</text>
+    </view>
+  </view>
+
+  <!-- Repair List -->
+  <scroll-view scroll-y wx:if="{{activeTab === 'list'}}" class="list-scroll">
+    <view wx:if="{{repairs.length === 0}}" class="empty-state card">
+      <text class="text-secondary">暂无报修记录</text>
+    </view>
+    <view wx:for="{{repairs}}" wx:key="id" class="repair-card card" bindtap="viewDetail" data-id="{{item.id}}">
+      <view class="flex-between">
+        <text class="repair-order">{{item.orderNo || '--'}}</text>
+        <text class="tag tag-{{statusType(item.status)}}">{{statusText(item.status)}}</text>
+      </view>
+      <text class="repair-desc line-clamp-2">{{item.description || '暂无描述'}}</text>
+      <view class="flex-between mt-8">
+        <text class="text-secondary" style="font-size:12px">{{item.createdAt}}</text>
+        <text class="text-secondary" style="font-size:12px">{{item.elevator?.regCode || ''}}</text>
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- Create Repair Form -->
+  <scroll-view scroll-y wx:if="{{activeTab === 'create'}}" class="form-scroll">
+    <view class="card">
+      <!-- Step 1: Select Project -->
+      <picker bindchange="onProjectChange" range="{{projects}}" range-key="name">
+        <view class="form-field">
+          <text class="form-label">项目</text>
+          <text class="form-value {{selectedProjectName ? '' : 'placeholder'}}">
+            {{selectedProjectName || '请选择项目'}}
+          </text>
+          <text class="arrow">›</text>
+        </view>
+      </picker>
+
+      <!-- Step 2: Select Elevator -->
+      <picker bindchange="onElevatorChange" range="{{elevators}}" range-key="label">
+        <view class="form-field">
+          <text class="form-label">电梯</text>
+          <text class="form-value {{selectedElevatorLabel ? '' : 'placeholder'}}">
+            {{selectedElevatorLabel || '请选择电梯'}}
+          </text>
+          <text class="arrow">›</text>
+        </view>
+      </picker>
+
+      <!-- Urgency -->
+      <view class="form-field">
+        <text class="form-label">紧急程度</text>
+        <view class="radio-group">
+          <view wx:for="{{urgencyOptions}}" wx:key="value" class="radio-item {{formUrgency === item.value ? 'radio-active' : ''}}" bindtap="setUrgency" data-value="{{item.value}}">
+            <text>{{item.label}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- Stop type -->
+      <view class="form-field">
+        <text class="form-label">停梯状态</text>
+        <picker bindchange="onStopTypeChange" range="{{stopOptions}}" range-key="label">
+          <text class="form-value {{selectedStopLabel ? '' : 'placeholder'}}">
+            {{selectedStopLabel || '请选择'}}
+          </text>
+        </picker>
+      </view>
+
+      <!-- Description -->
+      <view class="form-field">
+        <text class="form-label">故障描述</text>
+        <textarea class="form-textarea" placeholder="请描述故障现象" maxlength="500" bindinput="onDescInput" value="{{formDescription}}" auto-height />
+      </view>
+
+      <!-- Voice recording -->
+      <view class="form-field">
+        <text class="form-label">语音录入</text>
+        <view class="voice-row">
+          <view wx:if="{{!recordedVoice && !recording}}" class="voice-btn" bindtap="startRecording">
+            <text class="voice-icon voice-icon-rec">录</text>
+            <text class="voice-text">开始录音</text>
+          </view>
+          <view wx:if="{{recording}}" class="voice-btn voice-btn-recording" bindtap="stopRecording">
+            <text class="voice-icon voice-icon-stop">停</text>
+            <text class="voice-text">停止录音</text>
+          </view>
+          <view wx:if="{{recordedVoice && !recording}}" class="voice-row">
+            <view class="voice-btn voice-btn-play" bindtap="playVoice">
+              <text class="voice-icon voice-icon-play">播</text>
+              <text class="voice-text">播放</text>
+            </view>
+            <view class="voice-btn voice-btn-clear" bindtap="clearVoice">
+              <text class="voice-icon voice-icon-del">删</text>
+              <text class="voice-text">删除</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- Photo upload -->
+      <view class="form-field">
+        <text class="form-label">现场照片</text>
+        <view class="photo-grid">
+          <view wx:for="{{photos}}" wx:key="*this" class="photo-item">
+            <image src="{{item}}" class="photo-thumb" />
+            <text class="photo-del" bindtap="removePhoto" data-index="{{index}}">×</text>
+          </view>
+          <view wx:if="{{photos.length < 6}}" class="photo-add" bindtap="takePhoto">
+            <text style="font-size:32px;color:#c0c4cc">+</text>
+            <text style="font-size:12px;color:#c0c4cc">拍照</text>
+          </view>
+        </view>
+      </view>
+
+      <button class="btn-primary" bindtap="submitRepair" loading="{{submitting}}" disabled="{{submitting}}">
+        提交报修
+      </button>
+    </view>
+  </scroll-view>
+
+  <!-- Offline queue badge -->
+  <view wx:if="{{offlineCount > 0}}" class="offline-badge">
+    <text class="offline-badge-text">离线待提交：{{offlineCount}}条</text>
+  </view>
+
+  <view wx:if="{{activeTab === 'list'}}" class="fab" bindtap="switchTab" data-tab="create">
+    <text style="font-size:28px;color:#fff">+</text>
+  </view>
+</view>

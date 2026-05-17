@@ -1,0 +1,10 @@
+.scanner-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background: #ecf5ff;
+  border-radius: 8px;
+  color: #409eff;
+  font-size: 14px;
+}

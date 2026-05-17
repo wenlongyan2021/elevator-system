@@ -1,0 +1,47 @@
+<scroll-view scroll-y class="page" bindscrolltolower="loadMore">
+  <!-- Header -->
+  <view class="header">
+    <text class="header-title">消息通知</text>
+    <text wx:if="{{unreadCount > 0}}" class="mark-read" bindtap="markAllRead">全部已读</text>
+  </view>
+
+  <!-- Tab bar -->
+  <view class="section-tabs">
+    <view class="section-tab {{activeTab === 'all' ? 'active' : ''}}" data-tab="all" bindtap="switchTab">全部</view>
+    <view class="section-tab {{activeTab === 'unread' ? 'active' : ''}}" data-tab="unread" bindtap="switchTab">未读</view>
+  </view>
+
+  <!-- Loading -->
+  <view wx:if="{{loading && list.length === 0}}" class="loading-wrap">
+    <text class="text-secondary">加载中...</text>
+  </view>
+
+  <!-- Empty -->
+  <view wx:elif="{{list.length === 0 && !loading}}" class="empty-state">
+    <text class="text-secondary">暂无消息</text>
+  </view>
+
+  <!-- Notification List -->
+  <view wx:for="{{list}}" wx:key="id" class="notif-item {{item.isRead ? '' : 'unread'}}"
+    bindtap="handleClick"
+    data-id="{{item.id}}"
+    data-ref="{{item.refId}}"
+    data-read="{{item.isRead}}"
+  >
+    <view class="notif-dot" wx:if="{{!item.isRead}}"></view>
+    <view class="notif-body">
+      <view class="notif-title-row">
+        <text class="notif-title">{{item.title}}</text>
+        <text class="notif-type tag tag-{{item.type === 'REPAIR' ? 'warning' : item.type === 'INSPECT' ? 'success' : 'primary'}}">{{typeLabel(item.type)}}</text>
+      </view>
+      <text class="notif-content">{{item.content}}</text>
+      <text class="notif-time">{{item.createdAt}}</text>
+    </view>
+  </view>
+
+  <!-- Load more trigger -->
+  <view class="load-more" wx:if="{{hasMore && list.length > 0}}">
+    <text class="text-secondary" wx:if="{{loading}}">加载中...</text>
+    <text class="text-secondary" wx:else>上拉加载更多</text>
+  </view>
+</scroll-view>

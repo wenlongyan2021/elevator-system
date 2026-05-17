@@ -1,0 +1,90 @@
+<scroll-view scroll-y class="page">
+  <view wx:if="{{!repair}}" class="empty-state card">
+    <text class="text-secondary">加载中...</text>
+  </view>
+
+  <view wx:if="{{repair}}" class="container">
+    <!-- Status header -->
+    <view class="status-header card">
+      <text class="order-no">{{repair.orderNo || '--'}}</text>
+      <text class="tag tag-{{statusType(repair.status)}}">{{statusText(repair.status)}}</text>
+    </view>
+
+    <!-- Elevator info -->
+    <view class="card">
+      <text class="card-title">电梯信息</text>
+      <view class="info-row"><text class="info-label">注册代码</text><text class="info-value">{{repair.elevator?.regCode || '-'}}</text></view>
+      <view class="info-row"><text class="info-label">所在项目</text><text class="info-value">{{repair.elevator?.projectName || '-'}}</text></view>
+      <view class="info-row"><text class="info-label">楼栋位置</text><text class="info-value">{{repair.elevator?.building || ''}} {{repair.elevator?.locationDesc || ''}}</text></view>
+    </view>
+
+    <!-- Fault description -->
+    <view class="card">
+      <text class="card-title">故障描述</text>
+      <text class="desc-text">{{repair.description || '暂无描述'}}</text>
+    </view>
+
+    <!-- Repair info -->
+    <view class="card">
+      <text class="card-title">报修信息</text>
+      <view class="info-row"><text class="info-label">报修人</text><text class="info-value">{{repair.reporter?.name || repair.reporterName || '-'}}</text></view>
+      <view class="info-row"><text class="info-label">报修时间</text><text class="info-value">{{repair.createdAt}}</text></view>
+      <view class="info-row"><text class="info-label">紧急程度</text><text class="info-value">{{urgencyText(repair.urgency)}}</text></view>
+      <view class="info-row"><text class="info-label">停梯情况</text><text class="info-value">{{stopTypeText(repair.stopType)}}</text></view>
+    </view>
+
+    <!-- Assignee info -->
+    <view wx:if="{{repair.assignee}}" class="card">
+      <text class="card-title">维修人员</text>
+      <view class="info-row"><text class="info-label">姓名</text><text class="info-value">{{repair.assignee?.name || '-'}}</text></view>
+      <view class="info-row"><text class="info-label">电话</text><text class="info-value">{{repair.assignee?.phone || '-'}}</text></view>
+    </view>
+
+    <!-- Photos -->
+    <view wx:if="{{repair.mediaFiles && repair.mediaFiles.length}}" class="card">
+      <text class="card-title">现场照片 ({{repair.mediaFiles.length}})</text>
+      <view class="photo-list">
+        <image wx:for="{{repair.mediaFiles}}" wx:key="id" src="{{item.filePath || item.url || item}}" mode="aspectFill" class="detail-photo" />
+      </view>
+    </view>
+
+    <!-- Parts list -->
+    <view wx:if="{{parts.length}}" class="card">
+      <text class="card-title">配件清单</text>
+      <view wx:for="{{parts}}" wx:key="id" class="part-item flex-between">
+        <view><text>{{item.partName || item.name}} </text><text wx:if="{{item.partModel}}" class="text-secondary">{{item.partModel}}</text></view>
+        <text class="text-secondary">x{{item.quantity}} ¥{{(Number(item.price) * item.quantity).toFixed(2)}}</text>
+      </view>
+    </view>
+
+    <!-- Workflow timeline -->
+    <view wx:if="{{workflow && workflow.nodes && workflow.nodes.length}}" class="card">
+      <text class="card-title">审批进度</text>
+      <view wx:for="{{workflow.nodes}}" wx:key="id" class="timeline-item">
+        <view class="timeline-dot"></view>
+        <view class="timeline-content">
+          <view style="font-size:14px">{{stepName(item.stepName || item.action)}}</view>
+          <view wx:if="{{item.comment}}" class="text-secondary">{{item.comment}}</view>
+          <view class="text-secondary" style="font-size:12px">{{item.createdAt}}</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- Action buttons -->
+    <view class="action-bar" wx:if="{{canAccept || canComplete}}">
+      <button wx:if="{{canAccept}}" class="btn-primary" loading="{{accepting}}" bindtap="handleAccept">接单</button>
+      <view wx:if="{{canComplete && !showCompleteForm}}" class="btn-primary" bindtap="toggleCompleteForm">提交维修结果</view>
+    </view>
+
+    <!-- Complete repair form -->
+    <view wx:if="{{showCompleteForm}}" class="card">
+      <text class="card-title">维修结果</text>
+      <textarea value="{{resolveNote}}" bindinput="onNoteInput" placeholder="请填写维修说明" style="width:100%;min-height:80px;border:1px solid #ddd;border-radius:4px;padding:8px;margin-top:8px" />
+      <label style="display:flex;align-items:center;margin-top:12px">
+        <checkbox checked="{{isPartsNeeded}}" bindchange="onPartsNeededChange" /> 需要更换配件
+      </label>
+      <button class="btn-primary" style="margin-top:12px" loading="{{submitting}}" bindtap="handleComplete">提交</button>
+      <button style="margin-top:8px" bindtap="toggleCompleteForm">取消</button>
+    </view>
+  </view>
+</scroll-view>

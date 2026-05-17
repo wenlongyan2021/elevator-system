@@ -1,0 +1,60 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/elevator-info/elevator-info",
+    "pages/repair/repair",
+    "pages/inspection/inspection",
+    "pages/profile/profile",
+    "pages/repair-detail/repair-detail",
+    "pages/notification/notification",
+    "pages/elevator-list/elevator-list",
+    "pages/maintenance-plan/maintenance-plan"
+  ],
+  "window": {
+    "navigationBarTitleText": "电梯管理系统",
+    "navigationBarBackgroundColor": "#409EFF",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f0f2f5",
+    "backgroundTextStyle": "light"
+  },
+  "tabBar": {
+    "color": "#909399",
+    "selectedColor": "#409EFF",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "iconPath": "images/home.png",
+        "selectedIconPath": "images/home-active.png",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/repair/repair",
+        "iconPath": "images/repair.png",
+        "selectedIconPath": "images/repair-active.png",
+        "text": "报修"
+      },
+      {
+        "pagePath": "pages/inspection/inspection",
+        "iconPath": "images/inspect.png",
+        "selectedIconPath": "images/inspect-active.png",
+        "text": "巡查"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "iconPath": "images/profile.png",
+        "selectedIconPath": "images/profile-active.png",
+        "text": "我的"
+      }
+    ]
+  },
+  "requiredBackgroundModes": [],
+  "permission": {
+    "scope.userLocation": {
+      "desc": "巡查拍照需要获取您的位置信息以添加水印"
+    }
+  },
+  "requiredPrivateInfos": ["getLocation"],
+  "lazyCodeLoading": "requiredComponents"
+}

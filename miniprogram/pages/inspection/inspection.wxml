@@ -1,0 +1,44 @@
+<view class="page">
+  <view class="container">
+    <view class="card">
+      <text class="card-title">快捷巡查</text>
+      <text class="text-secondary" style="font-size:13px;display:block;margin-bottom:12px">
+        拍照记录电梯运行状态，照片将自动添加时间、地点水印
+      </text>
+      <picker
+        mode="selector"
+        range="{{elevatorList}}"
+        range-key="{{'regCode'}}"
+        value="{{elevatorId}}"
+        bindchange="onElevatorChange"
+      >
+        <view class="picker-trigger {{elevatorId ? '' : 'text-secondary'}}">
+          {{selectedElevatorName || '请选择巡查电梯'}}
+        </view>
+      </picker>
+      <button class="btn-primary" bindtap="startInspection" disabled="{{!elevatorId || submitting}}">
+        <text wx:if="{{!takingPhoto && !submitting}}">开始巡查拍照</text>
+        <text wx:if="{{takingPhoto || submitting}}">处理中...</text>
+      </button>
+    </view>
+
+    <view class="card">
+      <text class="card-title">巡查记录</text>
+      <view wx:if="{{records.length === 0}}" class="empty-state">
+        <text class="text-secondary">暂无巡查记录</text>
+      </view>
+      <view wx:for="{{records}}" wx:key="id" class="record-item">
+        <view class="flex-between">
+          <text class="record-label">{{item.elevatorName || '电梯巡查'}}</text>
+          <text class="text-secondary" style="font-size:12px">{{item.createdAt}}</text>
+        </view>
+        <view wx:if="{{item.photos && item.photos.length}}" class="record-photos">
+          <image wx:for="{{item.photos}}" wx:key="filePath" src="{{item.filePath}}" mode="aspectFill" class="record-photo" />
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- Hidden watermark canvas -->
+  <canvas canvas-id="watermarkCanvas" style="width:375px;height:500px;position:fixed;left:-9999px;top:0" />
+</view>

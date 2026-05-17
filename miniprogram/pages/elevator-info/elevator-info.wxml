@@ -1,0 +1,103 @@
+<scroll-view scroll-y class="page">
+  <view wx:if="{{!elevator && loading}}" class="empty-state card">
+    <text class="text-secondary">加载中...</text>
+  </view>
+
+  <view wx:if="{{!elevator && !loading}}" class="empty-state card">
+    <text class="text-secondary">未找到电梯信息</text>
+  </view>
+
+  <view wx:if="{{elevator}}" class="container">
+    <!-- Status header -->
+    <view class="status-header card">
+      <view class="status-header-row">
+        <text class="elevator-title">{{elevator.regCode || '--'}}</text>
+        <text class="tag tag-{{statusType(elevator.status)}}" style="font-size:14px;padding:4px 12px">
+          {{statusText(elevator.status)}}
+        </text>
+      </view>
+      <text class="text-secondary" style="font-size:12px;margin-top:4px;">{{elevator.project?.name || '-'}} · {{elevator.building || ''}}</text>
+    </view>
+
+    <!-- Section Tabs -->
+    <view class="section-tabs">
+      <view class="section-tab {{activeSection === 'info' ? 'active' : ''}}" data-section="info" bindtap="switchTab">基本信息</view>
+      <view class="section-tab {{activeSection === 'repairs' ? 'active' : ''}}" data-section="repairs" bindtap="switchTab">维修记录</view>
+      <view class="section-tab {{activeSection === 'plans' ? 'active' : ''}}" data-section="plans" bindtap="switchTab">维保计划</view>
+    </view>
+
+    <!-- Tab: Info -->
+    <view wx:if="{{activeSection === 'info'}}">
+      <!-- Basic info -->
+      <view class="card">
+        <text class="card-title">设备参数</text>
+        <view class="info-row"><text class="info-label">品牌型号</text><text class="info-value">{{elevator.brand || '-'}} {{elevator.model || ''}}</text></view>
+        <view class="info-row"><text class="info-label">设备编号</text><text class="info-value">{{elevator.regCode || '-'}}</text></view>
+        <view class="info-row"><text class="info-label">资产编号</text><text class="info-value">{{elevator.assetNo || '-'}}</text></view>
+        <view class="info-row"><text class="info-label">层/站</text><text class="info-value">{{elevator.floorCount || '-'}}层</text></view>
+        <view class="info-row"><text class="info-label">载重</text><text class="info-value">{{elevator.capacity ? elevator.capacity + 'kg' : '-'}}</text></view>
+        <view class="info-row"><text class="info-label">速度</text><text class="info-value">{{elevator.speed ? elevator.speed + 'm/s' : '-'}}</text></view>
+      </view>
+
+      <!-- Inspection info -->
+      <view class="card">
+        <text class="card-title">检验信息</text>
+        <view class="info-row"><text class="info-label">安装日期</text><text class="info-value">{{elevator.installDate || '-'}}</text></view>
+        <view class="info-row"><text class="info-label">上次检验</text><text class="info-value">{{elevator.lastInspectDate || '-'}}</text></view>
+        <view class="info-row">
+          <text class="info-label">下次检验</text>
+          <text class="info-value" style="{{elevator.nextInspectDate ? 'color:#e6a23c;font-weight:500;' : ''}}">{{elevator.nextInspectDate || '-'}}</text>
+        </view>
+      </view>
+
+      <!-- Assigned personnel -->
+      <view class="card">
+        <text class="card-title">负责人员</text>
+        <view class="info-row"><text class="info-label">客服管家</text><text class="info-value">{{elevator.customerService?.name || '-'}}</text></view>
+        <view class="info-row"><text class="info-label">维保人员</text><text class="info-value">{{elevator.maintainer?.name || '-'}}</text></view>
+        <view class="info-row"><text class="info-label">安全员</text><text class="info-value">{{elevator.safetyOfficer?.name || '-'}}</text></view>
+      </view>
+    </view>
+
+    <!-- Tab: Repair History -->
+    <view wx:if="{{activeSection === 'repairs'}}">
+      <view wx:if="{{repairLoading}}" class="loading-state card">
+        <text class="text-secondary">加载中...</text>
+      </view>
+      <view wx:elif="{{repairList.length === 0}}" class="empty-state card">
+        <text class="text-secondary">暂无维修记录</text>
+      </view>
+      <view wx:for="{{repairList}}" wx:key="id" class="repair-item card" bindtap="goRepairDetail" data-id="{{item.id}}">
+        <view class="repair-header">
+          <text class="repair-order-no">{{item.orderNo}}</text>
+          <text class="tag tag-{{statusType(item.status)}}">{{statusText(item.status)}}</text>
+        </view>
+        <text class="repair-desc">{{item.description}}</text>
+        <view class="repair-footer">
+          <text class="text-secondary" style="font-size:11px;">{{item.createdAt ? formatTime(new Date(item.createdAt)) : ''}}</text>
+          <text class="text-secondary" style="font-size:11px;">{{item.urgency === 'EMERGENCY' ? '紧急' : item.urgency === 'NORMAL' ? '普通' : '一般'}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- Tab: Maintenance Plans -->
+    <view wx:if="{{activeSection === 'plans'}}">
+      <view wx:if="{{planList.length === 0}}" class="empty-state card">
+        <text class="text-secondary">暂无维保计划</text>
+      </view>
+      <view wx:for="{{planList}}" wx:key="id" class="plan-item card">
+        <view class="plan-header">
+          <text class="plan-type">{{planTypeText(item.planType)}}</text>
+          <text class="tag tag-{{planStatusType(item.status)}}">{{planStatusText(item.status)}}</text>
+        </view>
+        <view class="info-row"><text class="info-label">计划日期</text><text class="info-value">{{item.planDate ? item.planDate.slice(0,10) : '-'}}</text></view>
+        <view class="info-row"><text class="info-label">维保人员</text><text class="info-value">{{item.maintainer?.name || '-'}}</text></view>
+      </view>
+    </view>
+
+    <!-- Action bar -->
+    <view class="action-bar">
+      <button class="btn-primary" bindtap="goRepair">一键报修</button>
+    </view>
+  </view>
+</scroll-view>

@@ -1,0 +1,41 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to QNAP NAS
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.NAS_HOST }}
+          port: ${{ secrets.NAS_PORT || 22 }}
+          username: ${{ secrets.NAS_USER }}
+          key: ${{ secrets.NAS_SSH_KEY }}
+          script: |
+            set -e
+
+            cd /share/ElevatorSystem
+
+            # Pull latest code
+            git pull origin main
+
+            # Ensure data directories exist
+            mkdir -p uploads/photos uploads/videos uploads/contracts uploads/exports
+
+            # Build and restart services
+            docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
+
+            # Clean old images
+            docker image prune -f
+
+            echo "=== Deployment complete ==="
+            docker compose -f docker-compose.prod.yml ps

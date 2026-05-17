@@ -1,0 +1,3 @@
+<view class="scanner-placeholder" bindtap="scan">
+  <text>📷 扫码识别</text>
+</view>

@@ -1,0 +1,91 @@
+page {
+  background-color: #f0f2f5;
+}
+.page {
+  height: 100vh;
+}
+.filter-bar {
+  display: flex;
+  gap: 0;
+  background: #fff;
+  padding: 10px 16px;
+  border-bottom: 1px solid #f2f2f2;
+}
+.filter-item {
+  padding: 4px 12px;
+  font-size: 13px;
+  color: #606266;
+  border-radius: 14px;
+  margin-right: 8px;
+}
+.filter-item.active {
+  background: #ecf5ff;
+  color: #409EFF;
+  font-weight: 500;
+}
+.plan-item {
+  margin: 8px 16px;
+  padding: 14px;
+}
+.plan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+.plan-elevator {
+  flex: 1;
+}
+.plan-elevator-code {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+.plan-elevator-building {
+  display: block;
+  font-size: 12px;
+  color: #909399;
+  margin-top: 2px;
+}
+.plan-info {
+  margin-bottom: 10px;
+}
+.info-line {
+  display: block;
+  font-size: 13px;
+  color: #606266;
+  line-height: 1.8;
+}
+.plan-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+.plan-actions {
+  display: flex;
+  gap: 8px;
+}
+.btn-sm {
+  font-size: 12px;
+  padding: 4px 14px;
+  border-radius: 4px;
+  border: none;
+  line-height: 2;
+}
+.btn-primary {
+  background: #409EFF;
+  color: #fff;
+}
+.btn-success {
+  background: #67c23a;
+  color: #fff;
+}
+.loading-state, .load-more {
+  text-align: center;
+  padding: 20px 0;
+}
+.empty-state {
+  margin: 16px;
+  text-align: center;
+  padding: 40px 0;
+}

@@ -1,0 +1,69 @@
+<scroll-view scroll-y class="page">
+  <view class="header-bar" wx:if="{{loggedIn}}">
+    <text class="header-title">电梯管理系统</text>
+    <view class="header-notif" bindtap="goNotifications">
+      <text class="notif-icon notif-icon-bell">消</text>
+      <text wx:if="{{unreadCount > 0}}" class="notif-badge">{{unreadCount > 99 ? '99+' : unreadCount}}</text>
+    </view>
+  </view>
+
+  <!-- Login prompt -->
+  <view wx:if="{{!loggedIn}}" class="login-prompt card">
+    <text class="prompt-text">请先登录以使用全部功能</text>
+    <button class="btn-primary" bindtap="goLogin">手机号登录</button>
+  </view>
+
+  <!-- Stats Overview -->
+  <view wx:if="{{loggedIn}}" class="stats-grid">
+    <view class="stat-item card" wx:for="{{stats}}" wx:key="label">
+      <text class="stat-value {{item.color}}">{{item.value}}</text>
+      <text class="stat-label">{{item.label}}</text>
+    </view>
+  </view>
+
+  <!-- Quick Actions -->
+  <view wx:if="{{loggedIn}}" class="quick-actions card">
+    <view class="card-title">快捷操作</view>
+    <view class="action-row">
+      <view class="action-btn" bindtap="scanQR">
+        <text class="action-icon action-scan">扫</text>
+        <text class="action-text">扫码查梯</text>
+      </view>
+      <view class="action-btn" bindtap="goRepair">
+        <text class="action-icon action-repair">修</text>
+        <text class="action-text">一键报修</text>
+      </view>
+      <view class="action-btn" bindtap="goElevatorList">
+        <text class="action-icon action-list">梯</text>
+        <text class="action-text">电梯列表</text>
+      </view>
+      <view class="action-btn" bindtap="goInspection">
+        <text class="action-icon action-inspect">巡</text>
+        <text class="action-text">巡查拍照</text>
+      </view>
+      <view class="action-btn" bindtap="refreshData">
+        <text class="action-icon action-refresh">刷</text>
+        <text class="action-text">刷新数据</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- Recent Repairs -->
+  <view wx:if="{{loggedIn}}" class="card">
+    <view class="flex-between">
+      <text class="card-title">最近报修</text>
+      <text class="text-secondary" bindtap="goRepair" style="font-size:12px">查看全部 ›</text>
+    </view>
+    <view wx:if="{{repairs.length === 0}}" class="empty-state">
+      <text class="text-secondary">暂无报修记录</text>
+    </view>
+    <view wx:for="{{repairs}}" wx:key="id" class="repair-item" bindtap="viewRepair" data-id="{{item.id}}">
+      <view class="flex-between">
+        <text class="repair-order">{{item.orderNo || '--'}}</text>
+        <text class="tag tag-{{statusType(item.status)}}">{{statusText(item.status)}}</text>
+      </view>
+      <text class="repair-desc line-clamp">{{item.description}}</text>
+      <text class="text-secondary" style="font-size:12px">{{item.createdAt}}</text>
+    </view>
+  </view>
+</scroll-view>

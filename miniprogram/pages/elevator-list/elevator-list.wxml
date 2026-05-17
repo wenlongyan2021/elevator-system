@@ -1,0 +1,46 @@
+<scroll-view scroll-y class="page" bindscrolltolower="loadMore">
+  <!-- Search bar -->
+  <view class="search-bar">
+    <input class="search-input" placeholder="搜索电梯编号/楼栋" bindinput="onSearchInput" value="{{keyword}}" confirm-type="search" bindconfirm="onSearch" />
+    <text class="search-btn" bindtap="onSearch">搜索</text>
+  </view>
+
+  <!-- Filters -->
+  <view class="filter-bar">
+    <view class="filter-item {{filterStatus === '' ? 'active' : ''}}" bindtap="setFilter" data-status="">全部</view>
+    <view class="filter-item {{filterStatus === 'RUNNING' ? 'active' : ''}}" bindtap="setFilter" data-status="RUNNING">运行中</view>
+    <view class="filter-item {{filterStatus === 'STOPPED' ? 'active' : ''}}" bindtap="setFilter" data-status="STOPPED">已停梯</view>
+    <view class="filter-item {{filterStatus === 'FAULT' ? 'active' : ''}}" bindtap="setFilter" data-status="FAULT">故障</view>
+  </view>
+
+  <!-- Elevator list -->
+  <view wx:if="{{loading && list.length === 0}}" class="loading-state">
+    <text class="text-secondary">加载中...</text>
+  </view>
+
+  <view wx:if="{{!loading && list.length === 0}}" class="empty-state card">
+    <text class="text-secondary">暂无电梯数据</text>
+  </view>
+
+  <view wx:for="{{list}}" wx:key="id" class="elevator-item card" bindtap="goDetail" data-id="{{item.id}}">
+    <view class="elevator-header">
+      <text class="elevator-code">{{item.regCode || item.registrationCode || '--'}}</text>
+      <text class="tag tag-{{statusType(item.status)}}">{{statusText(item.status)}}</text>
+    </view>
+    <view class="elevator-info">
+      <text class="info-line">{{item.building || '-'}}栋 · {{item.brand || '-'}} {{item.model || ''}}</text>
+      <text class="info-line">楼层: {{item.floorCount || '-'}}层 · {{item.capacity ? item.capacity + 'kg' : '-'}}</text>
+    </view>
+    <view class="elevator-footer">
+      <text class="text-secondary" style="font-size:11px;">最近年检: {{item.nextInspectDate || '-'}}</text>
+      <text class="arrow">›</text>
+    </view>
+  </view>
+
+  <view wx:if="{{hasMore}}" class="load-more">
+    <text class="text-secondary">上拉加载更多</text>
+  </view>
+  <view wx:if="{{!hasMore && list.length > 0}}" class="load-more">
+    <text class="text-secondary">没有更多了</text>
+  </view>
+</scroll-view>
