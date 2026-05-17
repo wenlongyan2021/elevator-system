@@ -13,26 +13,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Sync code to NAS project directory
+      - name: Deploy to NAS
         run: |
           set -e
           DOCKER="/share/CACHEDEV5_DATA/.qpkg/container-station/usr/bin/.libs/docker"
-          PROJECT_DIR="/share/CACHEDEV1_DATA/Public/ElevatorSystem"
 
-          # Use a privileged container with NAS paths mounted to sync code and run compose
-          $DOCKER run --rm \
+          # Sync checked-out code to NAS project directory using a helper container
+          # The runner container has docker CLI + socket but no /share paths
+          docker run --rm \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v /share/CACHEDEV1_DATA:/share/CACHEDEV1_DATA \
             -v /share/CACHEDEV5_DATA:/share/CACHEDEV5_DATA \
             -v ${{ github.workspace }}:/src:ro \
             -w /share/CACHEDEV1_DATA/Public/ElevatorSystem \
-            alpine:3.19 \
-            sh -c "
+            alpine:3.19 sh -c "
               apk add --no-cache rsync git
               echo '=== Syncing code from checkout ==='
               rsync -a --delete --exclude='node_modules' --exclude='.git' --exclude='uploads' /src/ ./
-              echo '=== Pulling latest from remote ==='
-              git pull origin main || echo 'Git pull skipped (fresh sync)'
               echo '=== Building and restarting services ==='
               /share/CACHEDEV5_DATA/.qpkg/container-station/usr/bin/.libs/docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
               echo '=== Cleaning old images ==='
@@ -44,5 +41,4 @@ jobs:
       - name: Verify deployment
         run: |
           sleep 15
-          DOCKER="/share/CACHEDEV5_DATA/.qpkg/container-station/usr/bin/.libs/docker"
-          $DOCKER ps --filter "name=elevator-" --format "{{.Names}}: {{.Status}}"
+          docker ps --filter "name=elevator-" --format "{{.Names}}: {{.Status}}"
