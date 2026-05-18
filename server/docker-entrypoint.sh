@@ -14,7 +14,7 @@ npx prisma migrate deploy
 # Seed data (idempotent: only inserts if no data exists)
 if [ -f prisma/seed.js ]; then
   echo "Seeding default data..."
-  node prisma/seed.js 2>/dev/null || echo "Seed skipped or already done"
+  node prisma/seed.js || echo "Seed skipped or already done"
 fi
 
 echo "Starting application..."
