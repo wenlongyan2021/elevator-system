@@ -58,7 +58,43 @@ jobs:
           docker run --rm \
             -v /var/run/docker.sock:/var/run/docker.sock \
             alpine:3.19 sh -c "
-              apk add --no-cache docker-cli docker-compose
+              apk add --no-cache docker-cli docker-compose curl
               echo '=== Service status ==='
               docker ps --filter 'name=elevator-' --format 'table {{.Names}}\t{{.Status}}'
             "
+
+      - name: Smoke test API
+        run: |
+          # Test API directly via container network
+          echo '=== Testing API health ==='
+          docker run --rm --network container:elevator-api \
+            alpine:3.19 sh -c "apk add --no-cache curl && curl -sf http://localhost:3000/api" \
+            && echo 'API health: OK' || echo 'API health: FAILED'
+
+          echo ''
+          echo '=== Testing login endpoint ==='
+          docker run --rm --network container:elevator-api \
+            alpine:3.19 sh -c "
+              apk add --no-cache curl
+              curl -s -X POST http://localhost:3000/api/auth/login \
+                -H 'Content-Type: application/json' \
+                -d '{\"phone\":\"13800000000\",\"password\":\"admin123\"}'
+            " || echo 'Login test FAILED'
+
+          echo ''
+          echo '=== Testing nginx proxy to admin ==='
+          docker run --rm --network container:elevator-nginx \
+            alpine:3.19 sh -c "
+              apk add --no-cache curl
+              curl -s -o /dev/null -w 'HTTP %{http_code}' http://localhost:80/
+            " || echo 'Nginx admin test FAILED'
+
+          echo ''
+          echo '=== Testing nginx proxy to API ==='
+          docker run --rm --network container:elevator-nginx \
+            alpine:3.19 sh -c "
+              apk add --no-cache curl
+              curl -s -X POST http://localhost:80/api/auth/login \
+                -H 'Content-Type: application/json' \
+                -d '{\"phone\":\"13800000000\",\"password\":\"admin123\"}'
+            " || echo 'Nginx API test FAILED'
