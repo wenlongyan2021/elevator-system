@@ -66,20 +66,16 @@ jobs:
       - name: Smoke test API
         run: |
           # Diagnose seed data: check inside containers
-          echo '=== Checking seed file ==='
-          docker exec elevator-api sh -c 'ls -la prisma/seed.js 2>&1; file prisma/seed.js 2>&1; head -5 /docker-entrypoint.sh 2>&1' 2>/dev/null
+          echo '=== Check seed file exists ==='
+          docker exec elevator-api ls -la prisma/seed.js || echo 'seed.js missing'
+          echo '=== Check entrypoint ==='
+          docker exec elevator-api cat /docker-entrypoint.sh || echo 'entrypoint missing'
 
           echo '=== Database user count ==='
           docker exec elevator-postgres psql -U elevator -d elevator_system -c 'SELECT phone, role FROM "User";' 2>&1
 
-          echo '=== Test auth directly ==='
-          docker exec elevator-api sh -c "node -e \"
-            const { PrismaClient } = require('@prisma/client');
-            const p = new PrismaClient({log:[{emit:'event',level:'query'},{emit:'event',level:'error'}]});
-            p.user.findUnique({where:{phone:'13800000000'}}).then(u => {
-              if (u) { console.log('USER FOUND:', u.name, u.role); } else { console.log('USER NOT FOUND'); }
-            }).catch(e => console.error('ERROR:', e.message));
-          \"" 2>&1
+          echo '=== Manual seed run ==='
+          docker exec elevator-api node prisma/seed.js 2>&1 || echo 'Seed failed'
 
           # Test API directly via container network
           echo '=== Testing API health ==='
