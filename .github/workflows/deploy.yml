@@ -65,13 +65,21 @@ jobs:
 
       - name: Smoke test API
         run: |
-          # Show API logs for diagnosis
-          echo '=== API startup logs ==='
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-            alpine:3.19 sh -c "
-              apk add --no-cache docker-cli >/dev/null 2>&1
-              docker logs elevator-api 2>&1 | tail -80
-            " 2>/dev/null || echo 'Could not get API logs'
+          # Diagnose seed data: check inside containers
+          echo '=== Checking seed file ==='
+          docker exec elevator-api sh -c 'ls -la prisma/seed.js 2>&1; file prisma/seed.js 2>&1; head -5 /docker-entrypoint.sh 2>&1' 2>/dev/null
+
+          echo '=== Database user count ==='
+          docker exec elevator-postgres psql -U elevator -d elevator_system -c 'SELECT phone, role FROM "User";' 2>&1
+
+          echo '=== Test auth directly ==='
+          docker exec elevator-api sh -c "node -e \"
+            const { PrismaClient } = require('@prisma/client');
+            const p = new PrismaClient({log:[{emit:'event',level:'query'},{emit:'event',level:'error'}]});
+            p.user.findUnique({where:{phone:'13800000000'}}).then(u => {
+              if (u) { console.log('USER FOUND:', u.name, u.role); } else { console.log('USER NOT FOUND'); }
+            }).catch(e => console.error('ERROR:', e.message));
+          \"" 2>&1
 
           # Test API directly via container network
           echo '=== Testing API health ==='
