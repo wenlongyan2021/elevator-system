@@ -65,6 +65,14 @@ jobs:
 
       - name: Smoke test API
         run: |
+          # Show API logs for diagnosis
+          echo '=== API startup logs ==='
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            alpine:3.19 sh -c "
+              apk add --no-cache docker-cli >/dev/null 2>&1
+              docker logs elevator-api 2>&1 | tail -80
+            " 2>/dev/null || echo 'Could not get API logs'
+
           # Test API directly via container network
           echo '=== Testing API health ==='
           docker run --rm --network container:elevator-api \
