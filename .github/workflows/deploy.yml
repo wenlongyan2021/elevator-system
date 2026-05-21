@@ -65,48 +65,51 @@ jobs:
 
       - name: Smoke test API
         run: |
-          # Diagnose seed data: check inside containers
-          echo '=== Check seed file exists ==='
-          docker exec elevator-api ls -la prisma/seed.js || echo 'seed.js missing'
-          echo '=== Check entrypoint ==='
-          docker exec elevator-api cat /docker-entrypoint.sh || echo 'entrypoint missing'
+          set -e
+          fail() { echo "❌ $1"; exit 1; }
 
           echo '=== Database user count ==='
           docker exec elevator-postgres psql -U elevator -d elevator_system -c 'SELECT phone, role FROM "User";' 2>&1
 
-          echo '=== Manual seed run ==='
-          docker exec elevator-api node prisma/seed.js 2>&1 || echo 'Seed failed'
-
           # Test API directly via container network
-          echo '=== Testing API health ==='
+          echo '=== 1/4 Testing API health ==='
           docker run --rm --network container:elevator-api \
             alpine:3.19 sh -c "apk add --no-cache curl && curl -sf http://localhost:3000/api" \
-            && echo 'API health: OK' || echo 'API health: FAILED'
+            && echo 'API health: OK' || fail 'API health check failed'
 
           echo ''
-          echo '=== Testing login endpoint ==='
-          docker run --rm --network container:elevator-api \
+          echo '=== 2/4 Testing login endpoint ==='
+          LOGIN_RESULT=$(docker run --rm --network container:elevator-api \
             alpine:3.19 sh -c "
               apk add --no-cache curl
               curl -s -X POST http://localhost:3000/api/auth/login \
                 -H 'Content-Type: application/json' \
                 -d '{\"phone\":\"13800000000\",\"password\":\"admin123\"}'
-            " || echo 'Login test FAILED'
+            ")
+          echo "$LOGIN_RESULT"
+          echo "$LOGIN_RESULT" | grep -q '"accessToken"' && echo 'Login: ✅ Token received' || fail 'Login returned no token'
 
           echo ''
-          echo '=== Testing nginx proxy to admin ==='
-          docker run --rm --network container:elevator-nginx \
+          echo '=== 3/4 Testing nginx proxy to admin ==='
+          NGINX_ADMIN=$(docker run --rm --network container:elevator-nginx \
             alpine:3.19 sh -c "
               apk add --no-cache curl
-              curl -s -o /dev/null -w 'HTTP %{http_code}' http://localhost:80/
-            " || echo 'Nginx admin test FAILED'
+              curl -s -o /dev/null -w '%{http_code}' http://localhost:80/
+            ")
+          echo "HTTP $NGINX_ADMIN"
+          [ "$NGINX_ADMIN" = "200" ] && echo 'Nginx → admin: ✅' || fail "Nginx admin returned HTTP $NGINX_ADMIN"
 
           echo ''
-          echo '=== Testing nginx proxy to API ==='
-          docker run --rm --network container:elevator-nginx \
+          echo '=== 4/4 Testing nginx proxy to API ==='
+          NGINX_LOGIN=$(docker run --rm --network container:elevator-nginx \
             alpine:3.19 sh -c "
               apk add --no-cache curl
               curl -s -X POST http://localhost:80/api/auth/login \
                 -H 'Content-Type: application/json' \
                 -d '{\"phone\":\"13800000000\",\"password\":\"admin123\"}'
-            " || echo 'Nginx API test FAILED'
+            ")
+          echo "$NGINX_LOGIN"
+          echo "$NGINX_LOGIN" | grep -q '"accessToken"' && echo 'Nginx → API login: ✅ Token received' || fail 'Nginx API login returned no token'
+
+          echo ''
+          echo '=== All smoke tests passed ✅ ==='
