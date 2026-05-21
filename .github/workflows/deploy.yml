@@ -43,7 +43,7 @@ jobs:
               mkdir -p uploads/photos uploads/videos uploads/contracts uploads/exports
 
               echo '=== Building and restarting services ==='
-              docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
+              docker compose -f docker-compose.prod.yml up -d --build --remove-orphans --force-recreate
 
               echo '=== Cleaning old images ==='
               docker image prune -f
@@ -61,6 +61,20 @@ jobs:
               apk add --no-cache docker-cli docker-compose curl
               echo '=== Service status ==='
               docker ps --filter 'name=elevator-' --format 'table {{.Names}}\t{{.Status}}'
+
+              echo ''
+              echo '=== Waiting for API to be healthy ==='
+              for i in \$(seq 1 30); do
+                health=\$(docker inspect --format='{{.State.Health.Status}}' elevator-api 2>/dev/null)
+                [ \"\$health\" = 'healthy' ] && echo 'API healthy after \${i}s' && break
+                [ \$i -eq 30 ] && echo 'API not healthy after 30s, continuing anyway'
+                sleep 2
+              done
+
+              echo ''
+              echo '=== Checking database users ==='
+              sleep 3
+              docker exec elevator-postgres psql -U elevator -d elevator_system -c 'SELECT phone, role FROM \"User\";' 2>&1 || echo 'No users found - seed may not have run'
             "
 
       - name: Smoke test API
