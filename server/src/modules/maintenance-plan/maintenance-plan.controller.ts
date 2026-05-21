@@ -6,7 +6,7 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MaintenancePlanService } from './maintenance-plan.service';
-import { CreateMaintenancePlanDto, MaintenancePlanQueryDto } from './dto/maintenance-plan.dto';
+import { CreateMaintenancePlanDto, BatchCreateMaintenancePlanDto, MaintenancePlanQueryDto } from './dto/maintenance-plan.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 @ApiTags('维保计划')
@@ -20,6 +20,12 @@ export class MaintenancePlanController {
   @ApiOperation({ summary: '创建维保计划' })
   create(@Body() dto: CreateMaintenancePlanDto) {
     return this.service.create(dto);
+  }
+
+  @Post('batch')
+  @ApiOperation({ summary: '批量创建维保计划' })
+  batchCreate(@Body() dto: BatchCreateMaintenancePlanDto) {
+    return this.service.batchCreate(dto);
   }
 
   @Post('import')

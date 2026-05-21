@@ -71,8 +71,7 @@
     </view>
 
     <!-- Action buttons -->
-    <view class="action-bar" wx:if="{{canAccept || canComplete}}">
-      <button wx:if="{{canAccept}}" class="btn-primary" loading="{{accepting}}" bindtap="handleAccept">接单</button>
+    <view class="action-bar" wx:if="{{canComplete}}">
       <view wx:if="{{canComplete && !showCompleteForm}}" class="btn-primary" bindtap="toggleCompleteForm">提交维修结果</view>
     </view>
 

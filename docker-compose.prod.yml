@@ -57,6 +57,11 @@ services:
       REDIS_URL: redis://:${REDIS_PASSWORD:-redis_pass_2024}@redis:6379
       NODE_ENV: production
       TZ: Asia/Shanghai
+      UPLOAD_PATH: /app/uploads
+      QR_URL_PREFIX: /uploads/qrcodes
+      INSPECTION_WINDOW_DAYS: "30"
+      CONTRACT_WINDOW_DAYS: "30"
+      MAINTENANCE_PLAN_WINDOW_DAYS: "7"
     volumes:
       - elevator_uploads:/app/uploads
     healthcheck:
@@ -74,8 +79,6 @@ services:
     container_name: elevator-admin
     depends_on:
       - api
-    ports:
-      - "127.0.0.1:8080:80"
 
   nginx:
     <<: *common

@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsDateString, IsEnum, IsInt, Min } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsDateString, IsEnum, IsInt, Min, IsArray, ArrayNotEmpty } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateMaintenancePlanDto {
@@ -16,10 +16,36 @@ export class CreateMaintenancePlanDto {
   @IsNotEmpty()
   planType: string;
 
-  @ApiProperty({ description: '维保员ID' })
+  @ApiProperty({ description: '维保员ID数组（至少2人）', type: [String] })
+  @IsArray()
+  @ArrayNotEmpty({ message: '请选择至少2名维保员' })
+  maintainerIds: string[];
+
+  @ApiPropertyOptional({ description: '备注' })
+  @IsOptional()
+  @IsString()
+  remark?: string;
+}
+
+export class BatchCreateMaintenancePlanDto {
+  @ApiProperty({ description: '电梯ID数组' })
+  @IsArray()
+  @IsNotEmpty()
+  elevatorIds: string[];
+
+  @ApiProperty({ description: '计划日期' })
+  @IsDateString()
+  planDate: string;
+
+  @ApiProperty({ description: '计划类型', enum: ['HALF_MONTHLY', 'MONTHLY', 'QUARTERLY', 'HALF_YEARLY', 'YEARLY'] })
   @IsString()
   @IsNotEmpty()
-  maintainerId: string;
+  planType: string;
+
+  @ApiProperty({ description: '维保员ID数组（至少2人）', type: [String] })
+  @IsArray()
+  @ArrayNotEmpty({ message: '请选择至少2名维保员' })
+  maintainerIds: string[];
 
   @ApiPropertyOptional({ description: '备注' })
   @IsOptional()

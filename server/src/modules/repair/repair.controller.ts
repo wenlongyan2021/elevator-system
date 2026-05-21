@@ -55,6 +55,12 @@ export class RepairController {
     return this.repairService.findRepairs(query);
   }
 
+  @Get('maintainers')
+  @ApiOperation({ summary: '获取维保人员列表' })
+  async getMaintainers() {
+    return this.repairService.getMaintainers();
+  }
+
   @Get(':id')
   @ApiOperation({ summary: '获取报修单详情' })
   async findOne(@Param('id') id: string) {
@@ -62,7 +68,7 @@ export class RepairController {
   }
 
   @Put(':id/accept')
-  @ApiOperation({ summary: '维保员接单' })
+  @ApiOperation({ summary: '分配维修人员' })
   async accept(@Param('id') id: string, @Body() dto: AcceptRepairDto) {
     return this.repairService.acceptRepair(id, dto.assigneeId);
   }

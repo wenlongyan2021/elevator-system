@@ -48,14 +48,14 @@ export class OrganizationController {
 
   // ---- Project ----
   @Post('projects')
-  @Roles(Role.ADMIN, Role.PROJECT_MANAGER)
+  @Roles(Role.ADMIN, Role.PROJECT_SUPERVISOR)
   @ApiOperation({ summary: '创建项目/小区' })
   createProject(@Body() dto: CreateProjectDto) {
     return this.service.createProject(dto);
   }
 
   @Put('projects/:id')
-  @Roles(Role.ADMIN, Role.PROJECT_MANAGER)
+  @Roles(Role.ADMIN, Role.PROJECT_SUPERVISOR)
   @ApiOperation({ summary: '更新项目/小区' })
   updateProject(@Param('id') id: string, @Body() dto: UpdateProjectDto) {
     return this.service.updateProject(id, dto);
@@ -75,7 +75,7 @@ export class OrganizationController {
 
   // ---- User ----
   @Post('users')
-  @Roles(Role.ADMIN, Role.PROJECT_MANAGER)
+  @Roles(Role.ADMIN, Role.PROJECT_SUPERVISOR)
   @ApiOperation({ summary: '创建用户' })
   createUser(@Body() dto: CreateUserDto) {
     return this.service.createUser(dto);
@@ -91,7 +91,7 @@ export class OrganizationController {
   }
 
   @Put('users/:id')
-  @Roles(Role.ADMIN, Role.PROJECT_MANAGER)
+  @Roles(Role.ADMIN, Role.PROJECT_SUPERVISOR)
   @ApiOperation({ summary: '更新用户' })
   updateUser(@Param('id') id: string, @Body() dto: UpdateUserDto) {
     return this.service.updateUser(id, dto);

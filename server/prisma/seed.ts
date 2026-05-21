@@ -75,42 +75,42 @@ async function main() {
   // -----------------------------------------------------------------------
   const adminUser = await prisma.user.upsert({
     where: { phone: '13800000000' },
-    update: {},
+    update: { password: hashedPwd },
     create: { name: '系统管理员', phone: '13800000000', password: hashedPwd, role: 'ADMIN' },
   })
   const manager = await prisma.user.upsert({
     where: { phone: '13900000001' },
-    update: {},
-    create: { name: '张经理', phone: '13900000001', password: hashedUserPwd, role: 'PROJECT_MANAGER' },
+    update: { password: hashedUserPwd },
+    create: { name: '张经理', phone: '13900000001', password: hashedUserPwd, role: 'ADMIN' },
   })
   const csWang = await prisma.user.upsert({
     where: { phone: '13900000002' },
-    update: {},
+    update: { password: hashedUserPwd },
     create: { name: '王客服', phone: '13900000002', password: hashedUserPwd, role: 'CUSTOMER_SERVICE' },
   })
   const engineerLi = await prisma.user.upsert({
     where: { phone: '13900000003' },
-    update: {},
+    update: { password: hashedUserPwd },
     create: { name: '李工程', phone: '13900000003', password: hashedUserPwd, role: 'ENGINEER' },
   })
   const maintainerZhao = await prisma.user.upsert({
     where: { phone: '13900000004' },
-    update: {},
+    update: { password: hashedUserPwd, maintenanceUnitId: mu1.id },
     create: { name: '赵维保', phone: '13900000004', password: hashedUserPwd, role: 'ELEVATOR_MAINTAINER', maintenanceUnitId: mu1.id },
   })
   const maintainerQian = await prisma.user.upsert({
     where: { phone: '13900000005' },
-    update: {},
+    update: { password: hashedUserPwd, maintenanceUnitId: mu2.id },
     create: { name: '钱维保', phone: '13900000005', password: hashedUserPwd, role: 'ELEVATOR_MAINTAINER', maintenanceUnitId: mu2.id },
   })
   const safetyOfficer = await prisma.user.upsert({
     where: { phone: '13900000006' },
-    update: {},
+    update: { password: hashedUserPwd },
     create: { name: '周安全', phone: '13900000006', password: hashedUserPwd, role: 'SAFETY_OFFICER' },
   })
   const supervisorWu = await prisma.user.upsert({
     where: { phone: '13900000007' },
-    update: {},
+    update: { password: hashedUserPwd },
     create: { name: '吴主管', phone: '13900000007', password: hashedUserPwd, role: 'PROJECT_SUPERVISOR' },
   })
 
@@ -323,7 +323,7 @@ async function main() {
   // -----------------------------------------------------------------------
   // Maintenance Plans (next 6 months)
   // -----------------------------------------------------------------------
-  const planData: Array<{ elevatorId: string; planDate: Date; planType: string; maintainerId: string }> = []
+  const planData: Array<{ elevatorId: string; planDate: Date; planType: string; maintainerIds: string[] }> = []
   const now = new Date()
   const allElevatorIds = elevators.map((e) => ({ id: e.id, maintainerId: e.maintainerId! }))
   for (let m = 0; m < 6; m++) {
@@ -332,7 +332,7 @@ async function main() {
       const d = new Date(now.getFullYear(), now.getMonth() + m, day)
       if (d > new Date(now.getFullYear(), now.getMonth() + m + 1, 0)) continue
       for (const e of allElevatorIds) {
-        planData.push({ elevatorId: e.id, planDate: d, planType: 'HALF_MONTHLY', maintainerId: e.maintainerId })
+        planData.push({ elevatorId: e.id, planDate: d, planType: 'HALF_MONTHLY', maintainerIds: [e.maintainerId] })
       }
     }
   }

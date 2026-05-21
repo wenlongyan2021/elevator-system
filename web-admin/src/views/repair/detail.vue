@@ -13,7 +13,7 @@
         <span>工单状态</span>
       </template>
       <el-steps :active="currentStep" finish-status="success" align-center>
-        <el-step title="待接单" />
+        <el-step title="待分配" />
         <el-step title="维修中" />
         <el-step title="主管审批" />
         <el-step title="经理审批" />
@@ -109,9 +109,23 @@
       <el-card shadow="never" class="section-card" v-if="showActions">
         <template #header><span>操作</span></template>
 
-        <!-- Accept -->
+        <!-- Assign Maintainer -->
         <div v-if="detail.status === 'PENDING_ACCEPT'" style="margin-bottom: 12px">
-          <el-button type="primary" @click="handleAccept">接单</el-button>
+          <el-form ref="assignFormRef" :model="assignForm" :rules="assignRules" label-width="100px">
+            <el-form-item label="分配维修人" prop="assigneeId">
+              <el-select v-model="assignForm.assigneeId" placeholder="请选择维修人员" style="width: 280px">
+                <el-option
+                  v-for="user in maintainers"
+                  :key="user.id"
+                  :label="`${user.name} (${user.phone})`"
+                  :value="user.id"
+                />
+              </el-select>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" @click="handleAssign">分配</el-button>
+            </el-form-item>
+          </el-form>
         </div>
 
         <!-- Complete Repair Form -->
@@ -460,6 +474,18 @@ function materialTypeLabel(type: string): string {
   return map[type] || type
 }
 
+// Maintainers list for assignment
+const maintainers = ref<any[]>([])
+
+// Assign form
+const assignFormRef = ref()
+const assignForm = reactive({
+  assigneeId: '',
+})
+const assignRules = {
+  assigneeId: [{ required: true, message: '请选择维修人员', trigger: 'blur' }],
+}
+
 const repairFormRef = ref()
 const repairForm = ref({ summary: '' })
 const repairRules = {
@@ -495,7 +521,7 @@ function costTypeLabel(type: string): string {
 
 // Status helpers
 const statusMap: Record<string, { label: string; type: string }> = {
-  PENDING_ACCEPT: { label: '待接单', type: 'warning' },
+  PENDING_ACCEPT: { label: '待分配', type: 'warning' },
   PENDING_REPAIR: { label: '维修中', type: 'primary' },
   PENDING_SUPERVISOR: { label: '待主管审批', type: 'warning' },
   PENDING_MANAGER: { label: '待经理审批', type: 'danger' },
@@ -559,14 +585,23 @@ const showActions = computed(() => {
 
 async function fetchDetail() {
   const id = route.params.id as string
-  if (!id) return
+  if (!id) {
+    ElMessage.error('缺少报修单ID参数')
+    router.push('/repair')
+    return
+  }
   loading.value = true
   try {
     const res: any = await repairApi.get(id)
     detail.value = res
-  } catch {
+  } catch (err: any) {
     detail.value = null
-    ElMessage.error('获取工单详情失败')
+    const msg = err?.response?.data?.message || ''
+    if (msg.includes('不存在') || err?.response?.status === 404) {
+      ElMessage.error('报修单不存在或已被删除')
+    } else {
+      ElMessage.error('获取工单详情失败')
+    }
   } finally {
     loading.value = false
   }
@@ -665,18 +700,27 @@ async function handleSaveMaterial() {
   }
 }
 
-async function handleAccept() {
+async function fetchMaintainers() {
   try {
-    await ElMessageBox.confirm('确认接单？', '提示', { type: 'info' })
+    const res: any = await repairApi.getMaintainers()
+    maintainers.value = res || []
   } catch {
-    return
+    maintainers.value = []
   }
+}
+
+async function handleAssign() {
+  const valid = await assignFormRef.value?.validate().catch(() => false)
+  if (!valid) return
   try {
-    await repairApi.accept(route.params.id as string, {})
-    ElMessage.success('接单成功')
+    await repairApi.accept(route.params.id as string, {
+      assigneeId: assignForm.assigneeId,
+    })
+    ElMessage.success('分配成功')
     fetchDetail()
+    assignForm.assigneeId = ''
   } catch {
-    ElMessage.error('接单失败')
+    ElMessage.error('分配失败')
   }
 }
 
@@ -798,6 +842,7 @@ onMounted(() => {
   fetchCosts()
   fetchWorkflow()
   fetchMaterials()
+  fetchMaintainers()
 })
 </script>
 

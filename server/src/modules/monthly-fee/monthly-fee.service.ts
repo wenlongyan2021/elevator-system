@@ -12,7 +12,8 @@ export class MonthlyFeeService {
     const now = new Date();
     const year = dto.year || now.getFullYear();
     const month = dto.month || now.getMonth() + 1;
-    const yearMonth = new Date(year, month - 1, 1);
+    // 创建一个本地时区的日期对象，避免时区问题，设置为中午12点
+    const yearMonth = new Date(year, month - 1, 1, 12, 0, 0);
 
     const where: any = {
       status: 'ACTIVE',

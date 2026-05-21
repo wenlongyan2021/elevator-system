@@ -33,6 +33,13 @@
         <el-table-column label="计划类型" width="120">
           <template #default="scope">{{ planTypeText(scope.row.planType) }}</template>
         </el-table-column>
+        <el-table-column label="维保员" min-width="150">
+          <template #default="scope">
+            <el-tag v-for="(id, idx) in (scope.row.maintainerIds || (scope.row.maintainerId ? [scope.row.maintainerId] : []))" :key="id" size="small" style="margin-right: 4px;" :type="(idx % 4) === 0 ? '' : (idx % 4) === 1 ? 'success' : (idx % 4) === 2 ? 'warning' : 'danger'">
+              {{ getUserName(id) }}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="status" label="状态" width="100">
           <template #default="scope">
             <el-tag :type="statusType(scope.row.status)">{{ statusText(scope.row.status) }}</el-tag>
@@ -70,7 +77,7 @@
           <el-button type="primary">选择文件</el-button>
         </template>
         <template #tip>
-          <div class="el-upload__tip">仅支持 .xlsx 格式，请先<a @click="downloadPlanTemplate()" style="cursor:pointer;color:#409EFF">下载模板</a></div>
+          <div class="el-upload__tip">仅支持 .xlsx 格式，请先<a @click="downloadPlanTemplate()" style="cursor:pointer;color:#409EFF">下载模板</a>，维保员ID用逗号分隔，至少2人</div>
         </template>
       </el-upload>
       <template #footer>
@@ -80,10 +87,16 @@
     </el-dialog>
 
     <!-- Create Dialog -->
-    <el-dialog v-model="dialogVisible" title="新增维保计划" width="500px">
+    <el-dialog v-model="dialogVisible" title="新增维保计划" width="600px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
-        <el-form-item label="电梯" prop="elevatorId">
-          <el-select v-model="form.elevatorId" filterable placeholder="请输入电梯编号搜索" style="width:100%">
+        <el-form-item label="电梯" prop="elevatorIds">
+          <el-select 
+            v-model="form.elevatorIds" 
+            multiple
+            filterable 
+            placeholder="请选择电梯（可多选）" 
+            style="width:100%"
+          >
             <el-option v-for="e in elevators" :key="e.id" :label="`${e.regCode} (${e.building || '-'})`" :value="e.id" />
           </el-select>
         </el-form-item>
@@ -99,8 +112,8 @@
             <el-option label="年度保" value="YEARLY" />
           </el-select>
         </el-form-item>
-        <el-form-item label="维保员" prop="maintainerId">
-          <el-select v-model="form.maintainerId" filterable placeholder="请选择维保员" style="width:100%">
+        <el-form-item label="维保员" prop="maintainerIds">
+          <el-select v-model="form.maintainerIds" multiple filterable placeholder="请选择维保员（至少2人）" style="width:100%">
             <el-option v-for="u in users" :key="u.id" :label="u.name" :value="u.id" />
           </el-select>
         </el-form-item>
@@ -110,16 +123,16 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSave">保存</el-button>
+        <el-button type="primary" :loading="saving" @click="handleSave">保存</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getMaintenancePlans, createMaintenancePlan, updateMaintenancePlanStatus, deleteMaintenancePlan, importMaintenancePlans, downloadPlanTemplate } from '@/api/maintenance-plan'
+import { getMaintenancePlans, batchCreateMaintenancePlan, updateMaintenancePlanStatus, deleteMaintenancePlan, importMaintenancePlans, downloadPlanTemplate } from '@/api/maintenance-plan'
 import { elevatorApi, userApi } from '@/api'
 
 const list = ref<any[]>([])
@@ -127,18 +140,27 @@ const total = ref(0)
 const loading = ref(false)
 const elevators = ref<any[]>([])
 const users = ref<any[]>([])
+const userMap = computed(() => {
+  const map: Record<string, string> = {}
+  users.value.forEach(u => { map[u.id] = u.name })
+  return map
+})
 const query = ref({ page: 1, limit: 20, status: '' })
 const dialogVisible = ref(false)
 const importVisible = ref(false)
 const importing = ref(false)
+const saving = ref(false)
 const uploadRef = ref<any>(null)
 const formRef = ref<any>(null)
-const form = ref({ elevatorId: '', planDate: '', planType: 'MONTHLY', maintainerId: '', remark: '' })
+const form = ref({ elevatorIds: [] as string[], planDate: '', planType: 'MONTHLY', maintainerIds: [] as string[], remark: '' })
 const rules = {
-  elevatorId: [{ required: true, message: '请选择电梯', trigger: 'change' }],
+  elevatorIds: [{ required: true, message: '请选择电梯', trigger: 'change' }, { type: 'array', min: 1, message: '请至少选择一台电梯', trigger: 'change' }],
   planDate: [{ required: true, message: '请选择日期', trigger: 'change' }],
   planType: [{ required: true, message: '请选择类型', trigger: 'change' }],
-  maintainerId: [{ required: true, message: '请选择维保员', trigger: 'change' }],
+  maintainerIds: [
+    { required: true, message: '请选择维保员', trigger: 'change' }, 
+    { type: 'array', min: 2, message: '请至少选择2名维保员', trigger: 'change' }
+  ],
 }
 
 function planTypeText(t: string) {
@@ -147,6 +169,7 @@ function planTypeText(t: string) {
 }
 function statusType(s: string) { return s === 'COMPLETED' ? 'success' : s === 'IN_PROGRESS' ? 'warning' : 'info' }
 function statusText(s: string) { return s === 'PENDING' ? '待执行' : s === 'IN_PROGRESS' ? '执行中' : '已完成' }
+function getUserName(id: string) { return userMap.value[id] || id }
 
 async function fetchData() {
   loading.value = true
@@ -171,11 +194,26 @@ async function loadOptions() {
 async function handleSave() {
   const valid = await formRef.value.validate().catch(() => false)
   if (!valid) return
-  await createMaintenancePlan(form.value)
-  ElMessage.success('创建成功')
-  dialogVisible.value = false
-  form.value = { elevatorId: '', planDate: '', planType: 'MONTHLY', maintainerId: '', remark: '' }
-  fetchData()
+  
+  saving.value = true
+  try {
+    const res: any = await batchCreateMaintenancePlan({
+      elevatorIds: form.value.elevatorIds,
+      planDate: form.value.planDate,
+      planType: form.value.planType,
+      maintainerIds: form.value.maintainerIds,
+      remark: form.value.remark,
+    })
+    ElMessage.success(`创建成功，共生成 ${res.created} 条维保计划`)
+    dialogVisible.value = false
+    form.value = { elevatorIds: [], planDate: '', planType: 'MONTHLY', maintainerIds: [], remark: '' }
+    fetchData()
+  } catch (e: any) {
+    console.error('创建维保计划失败:', e)
+    ElMessage.error(e?.response?.data?.message || e?.message || '创建失败，请检查输入')
+  } finally {
+    saving.value = false
+  }
 }
 
 async function handleStart(row: any) {

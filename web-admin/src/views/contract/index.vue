@@ -37,7 +37,9 @@
       <el-table-column prop="contractNo" label="合同编号" min-width="160" />
       <el-table-column prop="name" label="合同名称" min-width="180" />
       <el-table-column label="维保单位" min-width="160">
-        <template #default="{ row }">{{ row.maintenanceUnit?.name || row.maintenanceUnit }}</template>
+        <template #default="{ row }">
+          {{ typeof row.maintenanceUnit === 'object' ? (row.maintenanceUnit?.name || '-') : (row.maintenanceUnit || '-') }}
+        </template>
       </el-table-column>
       <el-table-column prop="startDate" label="开始日期" width="110" />
       <el-table-column prop="endDate" label="结束日期" width="110" />
@@ -173,10 +175,55 @@
           </el-col>
         </el-row>
         <el-form-item label="考核标准" prop="evaluationStd">
-          <el-input v-model="form.evaluationStd" type="textarea" :rows="2" placeholder='JSON格式，如：{"响应速度": 20, "服务质量": 30}' />
+          <div class="evaluation-std-section">
+            <el-checkbox-group v-model="form.selectedStandards">
+              <el-row :gutter="10">
+                <el-col v-for="std in evaluationStandards" :key="std.value" :span="12" style="margin-bottom: 8px">
+                  <el-checkbox :label="std.value">{{ std.label }}</el-checkbox>
+                  <el-input-number
+                    v-if="form.selectedStandards.includes(std.value)"
+                    v-model="std.weight"
+                    :min="1"
+                    :max="100"
+                    size="small"
+                    style="width: 80px; margin-left: 8px"
+                    controls-position="right"
+                  />
+                  <span v-if="form.selectedStandards.includes(std.value)" style="margin-left: 4px; color: #909399; font-size: 12px">%</span>
+                </el-col>
+              </el-row>
+            </el-checkbox-group>
+            <div style="margin-top: 12px; color: #666; font-size: 12px">
+              已选择 {{ form.selectedStandards.length }} 项考核标准
+              <span v-if="totalWeight !== 100" style="color: #F56C6C">（权重合计 {{ totalWeight }}%，应为 100%）</span>
+              <span v-else style="color: #67C23A">（权重合计 {{ totalWeight }}%）</span>
+            </div>
+          </div>
         </el-form-item>
         <el-form-item label="备注" prop="remark">
           <el-input v-model="form.remark" type="textarea" :rows="2" />
+        </el-form-item>
+        <el-form-item label="关联电梯">
+          <div class="elevator-select-section">
+            <el-select
+              v-model="form.elevatorIds"
+              multiple
+              filterable
+              placeholder="请选择电梯（可多选）"
+              style="width: 100%"
+              collapse-tags
+            >
+              <el-option
+                v-for="e in availableElevators"
+                :key="e.id"
+                :label="`${e.regCode} - ${e.brand} ${e.model} (${e.projectName || '未分配项目'})`"
+                :value="e.id"
+              />
+            </el-select>
+            <div style="margin-top: 8px; color: #666; font-size: 12px">
+              已选择 {{ form.elevatorIds?.length || 0 }} 台电梯
+            </div>
+          </div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -211,9 +258,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { contractApi, maintenanceUnitApi } from '@/api'
+import { contractApi, maintenanceUnitApi, elevatorApi } from '@/api'
+
+// ---------- 预设考核标准 ----------
+const evaluationStandards = ref([
+  { label: '响应速度', value: 'response_speed', weight: 20 },
+  { label: '维修质量', value: 'repair_quality', weight: 25 },
+  { label: '服务态度', value: 'service_attitude', weight: 15 },
+  { label: '设备完好率', value: 'equipment_health', weight: 20 },
+  { label: '故障修复及时率', value: 'fault_repair_rate', weight: 10 },
+  { label: '定期保养完成率', value: 'maintenance_rate', weight: 10 },
+])
+
+const totalWeight = computed(() => {
+  return evaluationStandards.value
+    .filter(std => form.selectedStandards.includes(std.value))
+    .reduce((sum, std) => sum + (std.weight || 0), 0)
+})
 
 // ---------- 状态 ----------
 const loading = ref(false)
@@ -225,6 +288,7 @@ const isEdit = ref(false)
 const editId = ref('')
 const formRef = ref()
 const maintenanceUnits = ref<any[]>([])
+const availableElevators = ref<any[]>([])
 const importVisible = ref(false)
 const importing = ref(false)
 const uploadRef = ref<any>(null)
@@ -251,6 +315,8 @@ const defaultForm = {
   contactPhone: '',
   evaluationStd: '',
   remark: '',
+  elevatorIds: [] as string[],
+  selectedStandards: [] as string[],
 }
 
 const form = reactive({ ...defaultForm })
@@ -311,6 +377,15 @@ async function loadMaintenanceUnits() {
   }
 }
 
+async function loadAvailableElevators() {
+  try {
+    const res = await elevatorApi.list({ limit: 9999 })
+    availableElevators.value = (res as any).list || (res as any).records || []
+  } catch {
+    availableElevators.value = []
+  }
+}
+
 function handleSearch() {
   query.page = 1
   fetchData()
@@ -328,6 +403,22 @@ function openCreate() {
 function openEdit(row: any) {
   isEdit.value = true
   editId.value = row.id
+  
+  // 解析已有的考核标准
+  let selectedStds: string[] = []
+  if (row.evaluationStd) {
+    try {
+      const parsed = JSON.parse(row.evaluationStd)
+      Object.entries(parsed).forEach(([label, weight]) => {
+        const std = evaluationStandards.value.find(s => s.label === label)
+        if (std) {
+          std.weight = weight as number
+          selectedStds.push(std.value)
+        }
+      })
+    } catch {}
+  }
+  
   Object.assign(form, {
     contractNo: row.contractNo || '',
     name: row.name || '',
@@ -343,6 +434,7 @@ function openEdit(row: any) {
     contactPhone: row.contactPhone || '',
     evaluationStd: row.evaluationStd || '',
     remark: row.remark || '',
+    selectedStandards: selectedStds,
   } as typeof defaultForm)
   dialogVisible.value = true
 }
@@ -352,14 +444,33 @@ async function handleSave() {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
 
+  // 转换考核标准为JSON格式
+  if (form.selectedStandards.length > 0) {
+    const stdObj: Record<string, number> = {}
+    form.selectedStandards.forEach(key => {
+      const std = evaluationStandards.value.find(s => s.value === key)
+      if (std) {
+        stdObj[std.label] = std.weight
+      }
+    })
+    form.evaluationStd = JSON.stringify(stdObj)
+  } else {
+    form.evaluationStd = ''
+  }
+
   saving.value = true
   try {
     if (isEdit.value) {
       await contractApi.update(editId.value, form)
       ElMessage.success('更新成功')
     } else {
-      await contractApi.create(form)
+      const res: any = await contractApi.create(form)
       ElMessage.success('创建成功')
+      // 如果选择了电梯，关联到合同
+      if (form.elevatorIds && form.elevatorIds.length > 0) {
+        await contractApi.addElevators(res.id, { elevatorIds: form.elevatorIds })
+        ElMessage.success('电梯关联成功')
+      }
     }
     dialogVisible.value = false
     fetchData()
@@ -424,6 +535,7 @@ async function handleExport() {
 onMounted(() => {
   fetchData()
   loadMaintenanceUnits()
+  loadAvailableElevators()
 })
 </script>
 
@@ -448,5 +560,10 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   margin-top: 20px;
+}
+.evaluation-std-section {
+  padding: 12px;
+  background: #f5f7fa;
+  border-radius: 4px;
 }
 </style>

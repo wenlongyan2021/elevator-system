@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../common/prisma.service';
 import { NotificationService } from '../notification/notification.service';
@@ -7,12 +8,20 @@ import { MonthlyFeeService } from '../monthly-fee/monthly-fee.service';
 @Injectable()
 export class ScheduledTasksService {
   private readonly logger = new Logger(ScheduledTasksService.name);
+  private readonly inspectionWindowDays: number;
+  private readonly contractWindowDays: number;
+  private readonly maintenancePlanWindowDays: number;
 
   constructor(
     private prisma: PrismaService,
     private notificationService: NotificationService,
     private monthlyFeeService: MonthlyFeeService,
-  ) {}
+    private config: ConfigService,
+  ) {
+    this.inspectionWindowDays = this.config.get<number>('INSPECTION_WINDOW_DAYS', 30);
+    this.contractWindowDays = this.config.get<number>('CONTRACT_WINDOW_DAYS', 30);
+    this.maintenancePlanWindowDays = this.config.get<number>('MAINTENANCE_PLAN_WINDOW_DAYS', 7);
+  }
 
   // Run daily at 8:00 AM
   @Cron(CronExpression.EVERY_DAY_AT_8AM)
@@ -63,13 +72,13 @@ export class ScheduledTasksService {
 
   private async checkUpcomingInspections() {
     const now = new Date();
-    const thirtyDaysLater = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const windowEnd = new Date(now.getTime() + this.inspectionWindowDays * 24 * 60 * 60 * 1000);
 
     const elevators = await this.prisma.elevator.findMany({
       where: {
         nextInspectDate: {
           gte: now,
-          lte: thirtyDaysLater,
+          lte: windowEnd,
         },
       },
       select: {
@@ -123,14 +132,14 @@ export class ScheduledTasksService {
 
   private async checkExpiringContracts() {
     const now = new Date();
-    const thirtyDaysLater = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const windowEnd = new Date(now.getTime() + this.contractWindowDays * 24 * 60 * 60 * 1000);
 
     const contracts = await this.prisma.contract.findMany({
       where: {
         status: 'ACTIVE',
         endDate: {
           gte: now,
-          lte: thirtyDaysLater,
+          lte: windowEnd,
         },
       },
       include: {
@@ -164,14 +173,14 @@ export class ScheduledTasksService {
 
   private async checkExpiringMaintenancePlans() {
     const now = new Date();
-    const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const windowEnd = new Date(now.getTime() + this.maintenancePlanWindowDays * 24 * 60 * 60 * 1000);
 
     const plans = await this.prisma.maintenancePlan.findMany({
       where: {
         status: 'PENDING',
         planDate: {
           gte: now,
-          lte: sevenDaysLater,
+          lte: windowEnd,
         },
       },
       include: {

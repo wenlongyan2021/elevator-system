@@ -1,4 +1,5 @@
 import { Injectable, Logger, NotFoundException, ConflictException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import * as QRCode from 'qrcode';
 import { PrismaService } from '../../common/prisma.service';
 import * as path from 'path';
@@ -7,8 +8,24 @@ import * as fs from 'fs';
 @Injectable()
 export class QRCodeService {
   private readonly logger = new Logger(QRCodeService.name);
+  private readonly uploadBasePath: string;
+  private readonly qrUrlPrefix: string;
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private config: ConfigService,
+  ) {
+    this.uploadBasePath = this.config.get<string>('UPLOAD_PATH', path.join(process.cwd(), 'uploads'));
+    this.qrUrlPrefix = this.config.get<string>('QR_URL_PREFIX', '/uploads/qrcodes');
+  }
+
+  private getQrDir(): string {
+    return path.join(this.uploadBasePath, 'qrcodes');
+  }
+
+  private getQrCodeContent(elevatorId: string): string {
+    return `elevator://scan?elevatorId=${elevatorId}`;
+  }
 
   async generateQR(elevatorId: string) {
     const elevator = await this.prisma.elevator.findUnique({
@@ -25,9 +42,9 @@ export class QRCodeService {
       throw new ConflictException('该电梯已生成二维码，如需重新生成请使用重新生成接口');
     }
 
-    const code = `elevator://scan?elevatorId=${elevatorId}`;
+    const code = this.getQrCodeContent(elevatorId);
 
-    const qrDir = path.join(process.cwd(), 'uploads', 'qrcodes');
+    const qrDir = this.getQrDir();
     if (!fs.existsSync(qrDir)) {
       fs.mkdirSync(qrDir, { recursive: true });
     }
@@ -48,7 +65,7 @@ export class QRCodeService {
       data: {
         elevatorId,
         code,
-        qrImagePath: `/uploads/qrcodes/${fileName}`,
+        qrImagePath: `${this.qrUrlPrefix}/${fileName}`,
       },
       include: {
         elevator: {
@@ -130,7 +147,7 @@ export class QRCodeService {
 
     if (existing) {
       if (existing.qrImagePath) {
-        const oldPath = path.join(process.cwd(), existing.qrImagePath);
+        const oldPath = path.join(this.getQrDir(), path.basename(existing.qrImagePath));
         if (fs.existsSync(oldPath)) {
           fs.unlinkSync(oldPath);
         }
@@ -152,7 +169,7 @@ export class QRCodeService {
       throw new NotFoundException('电梯不存在');
     }
 
-    const code = `elevator://scan?elevatorId=${elevatorId}`;
+    const code = this.getQrCodeContent(elevatorId);
 
     return QRCode.toBuffer(code, {
       width: 400,

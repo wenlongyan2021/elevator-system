@@ -62,4 +62,22 @@ export class DashboardController {
   async repairStats() {
     return this.dashboardService.getRepairStats();
   }
+
+  @Get('unplanned-maintenance')
+  @ApiOperation({ summary: '未按计划维保记录' })
+  async unplannedMaintenance() {
+    return this.dashboardService.getUnplannedMaintenance();
+  }
+
+  @Get('maintenance-duration-stats')
+  @ApiOperation({ summary: '维保时长统计' })
+  async maintenanceDurationStats() {
+    return this.dashboardService.getMaintenanceDurationStats();
+  }
+
+  @Get('repair-duration-stats')
+  @ApiOperation({ summary: '维修时长统计' })
+  async repairDurationStats() {
+    return this.dashboardService.getRepairDurationStats();
+  }
 }

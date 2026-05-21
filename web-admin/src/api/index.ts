@@ -108,6 +108,7 @@ export const repairApi = {
   }) => request.get('/repairs/parts-alerts', { params }),
   recommendedParts: (id: string) =>
     request.get(`/repairs/${id}/recommended-parts`),
+  getMaintainers: () => request.get('/repairs/maintainers'),
 }
 
 export const workflowApi = {
@@ -176,12 +177,17 @@ export const monthlyFeeApi = {
   get: (id: string) => request.get(`/monthly-fees/${id}`),
   generate: (data?: any) => request.post('/monthly-fees/generate', data || {}),
   updateStatus: (id: string, status: string) => request.put(`/monthly-fees/${id}/status`, { status }),
+  export: (params?: any) => request.post('/monthly-fees/export', params, { responseType: 'blob' }),
+  import: (file: FormData) => request.post('/monthly-fees/import', file, { 
+    headers: { 'Content-Type': 'multipart/form-data' } 
+  }),
 }
 
 export const maintenancePlanApi = {
   list: (params?: any) => request.get('/maintenance-plans', { params }),
   get: (id: string) => request.get(`/maintenance-plans/${id}`),
   create: (data: any) => request.post('/maintenance-plans', data),
+  batchCreate: (data: any) => request.post('/maintenance-plans/batch', data),
   updateStatus: (id: string, status: string) => request.put(`/maintenance-plans/${id}/status`, { status }),
   remove: (id: string) => request.delete(`/maintenance-plans/${id}`),
 }

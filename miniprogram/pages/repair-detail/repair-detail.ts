@@ -9,8 +9,6 @@ Page({
     resolveNote: '',
     isPartsNeeded: false,
     submitting: false,
-    accepting: false,
-    canAccept: false,
     canComplete: false,
   },
 
@@ -35,10 +33,9 @@ Page({
       const appUserRole = app.globalData.userInfo?.role
 
       // Any maintainer can accept when status is PENDING_ACCEPT and no assignee yet
-      const canAccept = !repair.assigneeId && repair.status === 'PENDING_ACCEPT' && appUserRole === 'ELEVATOR_MAINTAINER'
-      const canComplete = isAssignee && ['APPROVED', 'IN_REPAIR'].includes(repair.status)
+      const canComplete = isAssignee && repair.status === 'PENDING_REPAIR'
 
-      this.setData({ repair, workflow, canAccept, canComplete })
+      this.setData({ repair, workflow, canComplete })
       this.loadParts(id)
     } catch {
       wx.showToast({ title: '加载失败', icon: 'none' })
@@ -53,28 +50,6 @@ Page({
       const parts = await repairApi.getParts(id)
       this.setData({ parts: parts || [] })
     } catch { /* handled */ }
-  },
-
-  async handleAccept() {
-    const { repair } = this.data
-    if (!repair) return
-    const app = getApp<IAppOption>()
-    const assigneeId = app.globalData.userInfo?.id
-    if (!assigneeId) {
-      wx.showToast({ title: '请先登录', icon: 'none' })
-      return
-    }
-    this.setData({ accepting: true })
-    try {
-      const { repairApi } = await import('../../utils/api')
-      await repairApi.accept(repair.id, { assigneeId })
-      wx.showToast({ title: '已接单' })
-      this.loadDetail(repair.id)
-    } catch {
-      wx.showToast({ title: '接单失败', icon: 'none' })
-    } finally {
-      this.setData({ accepting: false })
-    }
   },
 
   toggleCompleteForm() {

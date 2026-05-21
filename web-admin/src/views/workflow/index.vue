@@ -210,7 +210,7 @@ const currentActionItem = ref<WorkflowItem | null>(null)
 const actionForm = reactive({ comment: '' })
 
 const stepLabels: Record<string, string> = {
-  PENDING_ACCEPT: '待接单',
+  PENDING_ACCEPT: '待分配',
   PENDING_REPAIR: '维修中',
   PENDING_PARTS_VERIFY: '待确认配件',
   PENDING_SUPERVISOR: '待主管审批',

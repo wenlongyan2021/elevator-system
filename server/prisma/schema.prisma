@@ -10,7 +10,6 @@ datasource db {
 // ==================== Organization & Users ====================
 
 enum Role {
-  PROJECT_MANAGER
   PROJECT_SUPERVISOR
   CUSTOMER_SERVICE
   ENGINEER
@@ -279,7 +278,11 @@ model RepairOrder {
   urgency     Urgency     @default(NORMAL)
   description String
   isPartsNeeded Boolean?  // 是否需要更换配件
+  isTrapped   Boolean     @default(false) // 是否困人
+  trappedCount Int?       // 困人数
   resolveNote String?     // 修复说明
+  acceptedAt  DateTime?   // 接单时间
+  startedAt   DateTime?   // 开始维修时间
   completedAt DateTime?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
@@ -517,15 +520,15 @@ model MaintenancePlan {
   elevator        Elevator @relation(fields: [elevatorId], references: [id])
   planDate        DateTime
   planType        String   // HALF_MONTHLY / MONTHLY / QUARTERLY / HALF_YEARLY / YEARLY
-  maintainerId    String
+  maintainerIds   String[] // 维保员ID数组，支持多人
   status          String   @default("PENDING") // PENDING / IN_PROGRESS / COMPLETED
+  startedAt       DateTime?
   completedAt     DateTime?
   remark          String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   @@index([elevatorId])
-  @@index([maintainerId])
   @@index([status])
   @@index([planDate])
 }
@@ -553,4 +556,45 @@ model SystemConfig {
   id    String @id @default(cuid())
   key   String @unique
   value String
+}
+
+// ==================== 供应商管理 ====================
+model InspectionVendor {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  contactName String?
+  contactPhone String?
+  address     String?
+  qualification String? // 资质
+  status      String   @default("ACTIVE") // ACTIVE / INACTIVE
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  prices      InspectionVendorPrice[]
+}
+
+model InspectionVendorPrice {
+  id          String   @id @default(cuid())
+  vendorId    String
+  vendor      InspectionVendor @relation(fields: [vendorId], references: [id])
+  floorCount  Int // 楼层数
+  basePrice   Decimal // 基础价格
+  price125    Decimal // 125%检测价格
+  remark      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([vendorId])
+}
+
+// ==================== 配件管理 ====================
+model Part {
+  id          String   @id @default(cuid())
+  name        String
+  brand       String?
+  model       String?
+  unitPrice   Decimal @default(0)
+  photo       String? // 照片路径
+  stock       Int @default(0)
+  status      String @default("ACTIVE")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

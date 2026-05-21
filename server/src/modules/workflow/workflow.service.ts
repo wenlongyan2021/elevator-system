@@ -536,7 +536,7 @@ export class WorkflowService {
 
   private statusLabel(status: string): string {
     const map: Record<string, string> = {
-      PENDING_REVIEW: '待审核', PENDING_ACCEPT: '待接单',
+      PENDING_REVIEW: '待审核', PENDING_ACCEPT: '待分配',
       PENDING_REPAIR: '维修中', PENDING_PARTS_VERIFY: '待配件确认',
       PENDING_SUPERVISOR: '待主管审批', PENDING_MANAGER: '待经理审批',
       PENDING_FUND_REVIEW: '待补充资金材料', APPROVED: '已批准',

@@ -84,9 +84,28 @@ export class RepairService {
   /**
    * Create a repair order with auto-generated order number,
    * linked elevator and reporter.
+   * Auto-assigns to the elevator's maintainer if available.
    */
   async createRepair(dto: CreateRepairDto) {
     const orderNo = await this.generateOrderNo();
+
+    // Get elevator info to determine auto-assignment
+    const elevator = await this.prisma.elevator.findUnique({
+      where: { id: dto.elevatorId },
+      select: {
+        maintainerId: true,
+        customerServiceId: true,
+        regCode: true,
+        project: { select: { id: true, name: true } },
+      },
+    });
+
+    // Auto-assign to the elevator's maintainer if available
+    const assigneeId = elevator?.maintainerId;
+    const status = assigneeId 
+      ? RepairStatus.PENDING_REPAIR  // Auto-assigned, ready for repair
+      : RepairStatus.PENDING_ACCEPT; // No maintainer, needs manual assignment
+
     const repair = await this.prisma.repairOrder.create({
       data: {
         orderNo,
@@ -95,7 +114,11 @@ export class RepairService {
         stopType: dto.stopType,
         urgency: dto.urgency || Urgency.NORMAL,
         description: dto.description,
-        status: RepairStatus.PENDING_ACCEPT,
+        isTrapped: dto.isTrapped ?? false,
+        trappedCount: dto.trappedCount,
+        status,
+        assigneeId,
+        acceptedAt: assigneeId ? new Date() : null,
       },
       include: {
         elevator: {
@@ -104,16 +127,47 @@ export class RepairService {
         reporter: {
           select: { id: true, name: true, phone: true, avatar: true },
         },
+        assignee: assigneeId ? {
+          select: { id: true, name: true, phone: true, avatar: true },
+        } : undefined,
       },
     });
 
-    // Notify the elevator's maintainer and customer service about the new repair
-    const notifyUserIds = [repair.elevator.maintainerId, repair.elevator.customerServiceId].filter(Boolean) as string[];
+    // Notify relevant users
+    const notifyUserIds: string[] = [];
+    
+    // Notify the assigned maintainer
+    if (assigneeId) {
+      notifyUserIds.push(assigneeId);
+    }
+    
+    // Notify customer service
+    if (elevator?.customerServiceId) {
+      notifyUserIds.push(elevator.customerServiceId);
+    }
+
     for (const userId of notifyUserIds) {
       await this.notificationService.createNotification({
         userId,
-        title: '新报修单',
-        content: `电梯 ${repair.elevator.regCode} 有新的报修单 (${orderNo})`,
+        title: assigneeId ? '新派工任务' : '新报修单待分配',
+        content: assigneeId 
+          ? `您有新的派工任务: 电梯 ${elevator?.regCode} 报修单 (${orderNo})`
+          : `电梯 ${elevator?.regCode} 有新的报修单 (${orderNo}) 待分配`,
+        type: 'REPAIR',
+        refId: repair.id,
+      });
+    }
+
+    // Notify reporter about auto-assignment
+    if (assigneeId && repair.reporterId) {
+      const assignee = await this.prisma.user.findUnique({
+        where: { id: assigneeId },
+        select: { name: true },
+      });
+      await this.notificationService.createNotification({
+        userId: repair.reporterId,
+        title: '报修已派工',
+        content: `您的报修单 (${orderNo}) 已自动指派给 ${assignee?.name || '维保员'}`,
         type: 'REPAIR',
         refId: repair.id,
       });
@@ -244,7 +298,7 @@ export class RepairService {
       throw new NotFoundException('报修单不存在');
     }
     if (repair.status !== RepairStatus.PENDING_ACCEPT) {
-      throw new BadRequestException('当前状态不可接单');
+      throw new BadRequestException('当前状态不可分配');
     }
 
     const result = await this.prisma.repairOrder.update({
@@ -252,6 +306,7 @@ export class RepairService {
       data: {
         assigneeId,
         status: RepairStatus.PENDING_REPAIR,
+        acceptedAt: new Date(),
       },
       include: {
         elevator: true,
@@ -275,6 +330,25 @@ export class RepairService {
     }
 
     return result;
+  }
+
+  /**
+   * Get all maintainers (ELEVATOR_MAINTAINER role users) for assignment.
+   */
+  async getMaintainers() {
+    return this.prisma.user.findMany({
+      where: {
+        role: 'ELEVATOR_MAINTAINER',
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        avatar: true,
+      },
+      orderBy: { name: 'asc' },
+    });
   }
 
   /**

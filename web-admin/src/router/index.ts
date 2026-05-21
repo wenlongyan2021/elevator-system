@@ -3,11 +3,12 @@ import { createRouter, createWebHistory } from 'vue-router'
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: '/login', component: () => import('@/views/login/index.vue') },
+    { path: '/login', component: () => import('@/views/login/index.vue'), meta: { requiresAuth: false } },
     {
       path: '/',
       component: () => import('@/views/layout/index.vue'),
       redirect: '/dashboard',
+      meta: { requiresAuth: true },
       children: [
         { path: 'dashboard', name: 'Dashboard', component: () => import('@/views/dashboard/index.vue'), meta: { title: '看板' } },
         { path: 'elevator', name: 'Elevator', component: () => import('@/views/elevator/index.vue'), meta: { title: '电梯台账' } },
@@ -30,9 +31,30 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach((to) => {
+let isRefreshing = false
+router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
-  if (to.path !== '/login' && !token) return '/login'
+  console.log('[ROUTER] Navigating to:', to.path, 'Token exists:', !!token)
+  
+  if (to.path === '/login') {
+    if (token && !isRefreshing) {
+      isRefreshing = true
+      console.log('[ROUTER] Already logged in, redirecting to /dashboard')
+      next('/dashboard')
+    } else {
+      console.log('[ROUTER] Allow to login page')
+      next()
+    }
+  } else {
+    if (!token) {
+      console.log('[ROUTER] No token, redirecting to login')
+      next('/login')
+    } else {
+      console.log('[ROUTER] Allow access to', to.path)
+      isRefreshing = false
+      next()
+    }
+  }
 })
 
 export default router

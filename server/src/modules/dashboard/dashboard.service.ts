@@ -224,4 +224,75 @@ export class DashboardService {
     await this.cache.set(cacheKey, result, 300);
     return result;
   }
+
+  async getUnplannedMaintenance() {
+    const today = new Date();
+    const overduePlans = await this.prisma.maintenancePlan.findMany({
+      where: {
+        status: 'PENDING',
+        planDate: { lt: today },
+      },
+      include: {
+        elevator: { include: { project: true } },
+      },
+      orderBy: { planDate: 'asc' },
+    });
+    return overduePlans;
+  }
+
+  async getMaintenanceDurationStats() {
+    const completedPlans = await this.prisma.maintenancePlan.findMany({
+      where: { status: 'COMPLETED', startedAt: { not: null }, completedAt: { not: null } },
+      include: { elevator: true },
+    });
+
+    const elevatorStats: Record<string, { count: number; totalMinutes: number }> = {};
+
+    for (const plan of completedPlans) {
+      if (!plan.startedAt || !plan.completedAt) continue;
+      const duration = (plan.completedAt.getTime() - plan.startedAt.getTime()) / (1000 * 60); // 分钟
+      if (!elevatorStats[plan.elevatorId]) {
+        elevatorStats[plan.elevatorId] = { count: 0, totalMinutes: 0 };
+      }
+      elevatorStats[plan.elevatorId].count++;
+      elevatorStats[plan.elevatorId].totalMinutes += duration;
+    }
+
+    return Object.entries(elevatorStats).map(([elevatorId, stats]) => ({
+      elevatorId,
+      avgDurationMinutes: parseFloat((stats.totalMinutes / stats.count).toFixed(1)),
+      totalCompleted: stats.count,
+    }));
+  }
+
+  async getRepairDurationStats() {
+    const completedRepairs = await this.prisma.repairOrder.findMany({
+      where: { status: { in: ['RESOLVED', 'CLOSED'] }, acceptedAt: { not: null }, startedAt: { not: null }, completedAt: { not: null } },
+      include: { elevator: true },
+    });
+
+    const stats: Array<{
+      id: string;
+      waitTimeMinutes?: number;
+      repairTimeMinutes?: number;
+      totalTimeMinutes?: number;
+      elevator: any;
+    }> = [];
+
+    for (const repair of completedRepairs) {
+      const stat: any = { id: repair.id, elevator: repair.elevator };
+      if (repair.createdAt && repair.acceptedAt) {
+        stat.waitTimeMinutes = Math.round((repair.acceptedAt.getTime() - repair.createdAt.getTime()) / (1000 * 60));
+      }
+      if (repair.startedAt && repair.completedAt) {
+        stat.repairTimeMinutes = Math.round((repair.completedAt.getTime() - repair.startedAt.getTime()) / (1000 * 60));
+      }
+      if (repair.createdAt && repair.completedAt) {
+        stat.totalTimeMinutes = Math.round((repair.completedAt.getTime() - repair.createdAt.getTime()) / (1000 * 60));
+      }
+      stats.push(stat);
+    }
+
+    return stats;
+  }
 }

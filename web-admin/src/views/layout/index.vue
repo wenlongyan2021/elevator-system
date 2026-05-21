@@ -27,7 +27,7 @@
       <el-header style="background:#fff;border-bottom:1px solid #e6e6e6;display:flex;align-items:center;justify-content:flex-end">
         <el-dropdown @command="handleCommand">
           <span style="cursor:pointer">
-            {{ auth.user?.name || '用户' }}
+            {{ auth.user?.name || '加载中...' }}
             <el-icon><ArrowDown /></el-icon>
           </span>
           <template #dropdown>
@@ -57,7 +57,15 @@ const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 
-onMounted(() => { if (!auth.user) auth.fetchProfile() })
+onMounted(async () => {
+  if (!auth.user && auth.token) {
+    try {
+      await auth.fetchProfile()
+    } catch (error) {
+      console.error('获取用户信息失败:', error)
+    }
+  }
+})
 
 function handleCommand(cmd: string) {
   if (cmd === 'logout') {

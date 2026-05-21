@@ -5,7 +5,7 @@
       <el-form :model="filters" inline>
         <el-form-item label="状态">
           <el-select v-model="filters.status" clearable placeholder="选择状态" style="width: 140px">
-            <el-option label="待接单" value="PENDING_ACCEPT" />
+            <el-option label="待分配" value="PENDING_ACCEPT" />
             <el-option label="维修中" value="PENDING_REPAIR" />
             <el-option label="待主管审批" value="PENDING_SUPERVISOR" />
             <el-option label="待经理审批" value="PENDING_MANAGER" />
@@ -140,7 +140,7 @@ const filters = reactive({
 
 // Status labels and types
 const statusMap: Record<string, { label: string; type: string }> = {
-  PENDING_ACCEPT: { label: '待接单', type: 'warning' },
+  PENDING_ACCEPT: { label: '待分配', type: 'warning' },
   PENDING_REPAIR: { label: '维修中', type: 'primary' },
   PENDING_SUPERVISOR: { label: '待主管审批', type: 'warning' },
   PENDING_MANAGER: { label: '待经理审批', type: 'danger' },

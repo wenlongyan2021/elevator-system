@@ -56,6 +56,11 @@ services:
       REDIS_URL: redis://:${REDIS_PASSWORD:-redis_pass_2024}@redis:6379
       JWT_SECRET: ${JWT_SECRET:-elevator_jwt_secret_dev}
       NODE_ENV: production
+      UPLOAD_PATH: /app/uploads
+      QR_URL_PREFIX: /uploads/qrcodes
+      INSPECTION_WINDOW_DAYS: "30"
+      CONTRACT_WINDOW_DAYS: "30"
+      MAINTENANCE_PLAN_WINDOW_DAYS: "7"
     volumes:
       - elevator_uploads:/app/uploads
     networks:

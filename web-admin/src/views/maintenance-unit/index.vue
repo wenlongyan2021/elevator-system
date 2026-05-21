@@ -101,7 +101,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getMaintenanceUnits, createMaintenanceUnit, updateMaintenanceUnit, deleteMaintenanceUnit } from '@/api/maintenance-unit'
 import { maintenanceUnitApi } from '@/api'
 
 const list = ref<any[]>([])
@@ -124,7 +123,7 @@ const scoreResult = ref<any>(null)
 async function fetchData() {
   loading.value = true
   try {
-    const res: any = await getMaintenanceUnits(query.value)
+    const res: any = await maintenanceUnitApi.list(query.value)
     list.value = res.list || []
     total.value = res.total || 0
   } finally {
@@ -142,10 +141,10 @@ async function handleSave() {
   const valid = await formRef.value.validate().catch(() => false)
   if (!valid) return
   if (editingId.value) {
-    await updateMaintenanceUnit(editingId.value, form.value)
+    await maintenanceUnitApi.update(editingId.value, form.value)
     ElMessage.success('更新成功')
   } else {
-    await createMaintenanceUnit(form.value)
+    await maintenanceUnitApi.create(form.value)
     ElMessage.success('创建成功')
   }
   dialogVisible.value = false
@@ -156,7 +155,7 @@ async function handleSave() {
 
 async function handleDelete(row: any) {
   await ElMessageBox.confirm(`确认删除维保单位「${row.name}」？`, '提示')
-  await deleteMaintenanceUnit(row.id)
+  await maintenanceUnitApi.remove(row.id)
   ElMessage.success('删除成功')
   fetchData()
 }

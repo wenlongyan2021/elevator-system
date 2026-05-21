@@ -24,7 +24,7 @@ export function statusText(status: string): string {
     STOPPED: '停梯',
     MAINTENANCE: '维保中',
     FAULT: '故障',
-    PENDING_ACCEPT: '待接单',
+    PENDING_ACCEPT: '待分配',
     PENDING_REPAIR: '维修中',
     PENDING_SUPERVISOR: '待主管审批',
     PENDING_MANAGER: '待经理审批',

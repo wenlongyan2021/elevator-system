@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEnum } from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsBoolean, IsInt } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Urgency } from '@prisma/client';
 
@@ -25,4 +25,14 @@ export class CreateRepairDto {
   @ApiProperty({ description: '故障描述' })
   @IsString()
   description: string;
+
+  @ApiPropertyOptional({ description: '是否困人' })
+  @IsOptional()
+  @IsBoolean()
+  isTrapped?: boolean;
+
+  @ApiPropertyOptional({ description: '困人数' })
+  @IsOptional()
+  @IsInt()
+  trappedCount?: number;
 }

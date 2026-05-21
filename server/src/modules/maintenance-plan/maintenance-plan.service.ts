@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
-import { CreateMaintenancePlanDto } from './dto/maintenance-plan.dto';
+import { CreateMaintenancePlanDto, BatchCreateMaintenancePlanDto } from './dto/maintenance-plan.dto';
 import * as XLSX from 'xlsx';
 
 @Injectable()
@@ -13,16 +13,65 @@ export class MaintenancePlanService {
     const elevator = await this.prisma.elevator.findUnique({ where: { id: dto.elevatorId } });
     if (!elevator) throw new NotFoundException(`电梯 ${dto.elevatorId} 不存在`);
 
+    if (dto.maintainerIds.length < 2) {
+      throw new BadRequestException('请选择至少2名维保员');
+    }
+
+    // 使用类型断言避免 TypeScript 类型错误
     return this.prisma.maintenancePlan.create({
       data: {
         elevatorId: dto.elevatorId,
         planDate: new Date(dto.planDate),
         planType: dto.planType,
-        maintainerId: dto.maintainerId,
+        maintainerIds: dto.maintainerIds,
         remark: dto.remark,
-      },
+      } as any,
       include: { elevator: true },
+    }) as any;
+  }
+
+  async batchCreate(dto: BatchCreateMaintenancePlanDto) {
+    const { elevatorIds, planDate, planType, maintainerIds, remark } = dto;
+    
+    if (elevatorIds.length === 0) {
+      throw new BadRequestException('请选择至少一台电梯');
+    }
+
+    if (maintainerIds.length < 2) {
+      throw new BadRequestException('请选择至少2名维保员');
+    }
+
+    // 检查所有电梯是否存在
+    const elevators = await this.prisma.elevator.findMany({
+      where: { id: { in: elevatorIds } },
     });
+
+    if (elevators.length !== elevatorIds.length) {
+      const foundIds = elevators.map(e => e.id);
+      const missingIds = elevatorIds.filter(id => !foundIds.includes(id));
+      throw new NotFoundException(`电梯 ${missingIds.join(', ')} 不存在`);
+    }
+
+    // 批量创建维保计划
+    const createdPlans: any[] = [];
+    for (const elevatorId of elevatorIds) {
+      const plan = await this.prisma.maintenancePlan.create({
+        data: {
+          elevatorId,
+          planDate: new Date(planDate),
+          planType,
+          maintainerIds,
+          remark,
+        },
+        include: { elevator: true },
+      });
+      createdPlans.push(plan);
+    }
+
+    return {
+      created: createdPlans.length,
+      plans: createdPlans,
+    };
   }
 
   async findAll(query: {
@@ -33,7 +82,9 @@ export class MaintenancePlanService {
     const where: any = {};
     if (elevatorId) where.elevatorId = elevatorId;
     if (status) where.status = status;
-    if (maintainerId) where.maintainerId = maintainerId;
+    if (maintainerId) {
+      where.maintainerIds = { has: maintainerId };
+    }
 
     const skip = (page - 1) * limit;
     const [items, total] = await this.prisma.$transaction([
@@ -59,7 +110,11 @@ export class MaintenancePlanService {
     const plan = await this.prisma.maintenancePlan.findUnique({ where: { id } });
     if (!plan) throw new NotFoundException(`维保计划 ${id} 不存在`);
     const data: any = { status };
-    if (status === 'COMPLETED') data.completedAt = new Date();
+    if (status === 'IN_PROGRESS' && !plan.startedAt) data.startedAt = new Date();
+    if (status === 'COMPLETED') {
+      data.completedAt = new Date();
+      if (!plan.startedAt) data.startedAt = new Date();
+    }
     return this.prisma.maintenancePlan.update({ where: { id }, data });
   }
 
@@ -71,7 +126,7 @@ export class MaintenancePlanService {
 
   /**
    * Import maintenance plans from Excel.
-   * Expected columns: 电梯注册代码, 计划日期, 计划类型, 维保员ID, 备注
+   * Expected columns: 电梯注册代码, 计划日期, 计划类型, 维保员ID(逗号分隔,至少2人), 备注
    */
   async importFromExcel(file: Express.Multer.File): Promise<{ imported: number; errors: string[] }> {
     const errors: string[] = [];
@@ -125,9 +180,15 @@ export class MaintenancePlanService {
         const validTypes = ['HALF_MONTHLY', 'MONTHLY', 'QUARTERLY', 'HALF_YEARLY', 'YEARLY'];
         const resolvedType = validTypes.includes(planType) ? planType : this.resolvePlanType(planType);
 
-        const maintainerId = String(row['维保员ID'] || row['maintainerId'] || '').trim();
-        if (!maintainerId) {
+        const maintainerIdsStr = String(row['维保员ID'] || row['maintainerId'] || row['维保员IDs'] || row['maintainerIds'] || '').trim();
+        if (!maintainerIdsStr) {
           errors.push(`第 ${i + 2} 行: 维保员ID不能为空`);
+          continue;
+        }
+
+        const maintainerIds = maintainerIdsStr.split(',').map(id => id.trim()).filter(id => id.length > 0);
+        if (maintainerIds.length < 2) {
+          errors.push(`第 ${i + 2} 行: 请至少选择2名维保员，多个ID用逗号分隔`);
           continue;
         }
 
@@ -138,7 +199,7 @@ export class MaintenancePlanService {
             elevatorId: elevator.id,
             planDate: planDateObj,
             planType: resolvedType,
-            maintainerId,
+            maintainerIds,
             remark,
           },
         });

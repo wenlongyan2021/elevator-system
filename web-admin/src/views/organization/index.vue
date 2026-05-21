@@ -64,7 +64,6 @@
         </el-form-item>
         <el-form-item label="角色" prop="role">
           <el-select v-model="userForm.role" style="width:100%">
-            <el-option label="项目经理" value="PROJECT_MANAGER" />
             <el-option label="项目主管" value="PROJECT_SUPERVISOR" />
             <el-option label="客服管家" value="CUSTOMER_SERVICE" />
             <el-option label="工程" value="ENGINEER" />
@@ -72,6 +71,7 @@
             <el-option label="电梯维保员" value="ELEVATOR_MAINTAINER" />
             <el-option label="安全员" value="SAFETY_OFFICER" />
             <el-option label="安全总监" value="SAFETY_DIRECTOR" />
+            <el-option label="管理员" value="ADMIN" />
           </el-select>
         </el-form-item>
         <el-form-item label="所属项目" prop="projectId">

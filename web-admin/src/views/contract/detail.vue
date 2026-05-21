@@ -18,7 +18,9 @@
             {{ statusLabel(contract.status) }}
           </el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="维保单位">{{ contract.maintenanceUnit }}</el-descriptions-item>
+        <el-descriptions-item label="维保单位">
+          {{ typeof contract.maintenanceUnit === 'object' ? (contract.maintenanceUnit?.name || '-') : (contract.maintenanceUnit || '-') }}
+        </el-descriptions-item>
         <el-descriptions-item label="开始日期">{{ contract.startDate }}</el-descriptions-item>
         <el-descriptions-item label="结束日期">{{ contract.endDate }}</el-descriptions-item>
         <el-descriptions-item label="月费(元)">{{ contract.monthlyPrice ? '¥' + Number(contract.monthlyPrice).toFixed(2) : '-' }}</el-descriptions-item>

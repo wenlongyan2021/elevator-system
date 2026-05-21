@@ -2,17 +2,18 @@
   <div class="login-container">
     <div class="login-card">
       <h2 class="login-title">电梯管理系统</h2>
-      <el-form ref="formRef" :model="form" :rules="rules" @keyup.enter="handleLogin">
+      <el-form ref="formRef" :model="form" :rules="rules" @submit.prevent="handleLogin">
         <el-form-item prop="phone">
           <el-input v-model="form.phone" placeholder="手机号" size="large" />
         </el-form-item>
         <el-form-item prop="password">
           <el-input v-model="form.password" type="password" placeholder="密码" size="large" show-password />
         </el-form-item>
-        <el-button type="primary" size="large" :loading="loading" style="width:100%" @click="handleLogin">
-          登 录
+        <el-button type="primary" size="large" :loading="loading" style="width:100%" @click="handleLogin" native-type="button">
+          {{ loading ? '登录中...' : '登 录' }}
         </el-button>
       </el-form>
+      <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
     </div>
   </div>
 </template>
@@ -26,6 +27,7 @@ import { ElMessage } from 'element-plus'
 const router = useRouter()
 const auth = useAuthStore()
 const loading = ref(false)
+const errorMessage = ref('')
 const formRef = ref()
 
 const form = reactive({ phone: '', password: '' })
@@ -35,13 +37,32 @@ const rules = {
 }
 
 async function handleLogin() {
+  console.log('[LOGIN] Starting login process...')
+  errorMessage.value = ''
   const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid) return
+  if (!valid) {
+    console.log('[LOGIN] Form validation failed')
+    return
+  }
+  
   loading.value = true
   try {
+    console.log('[LOGIN] Calling auth.login with:', form.phone)
     await auth.login(form.phone, form.password)
+    console.log('[LOGIN] Login success, auth store updated')
+    
     ElMessage.success('登录成功')
-    router.push('/')
+    
+    setTimeout(() => {
+      console.log('[LOGIN] Redirecting to /dashboard')
+      router.push('/dashboard')
+    }, 300)
+    
+  } catch (error: any) {
+    console.error('[LOGIN] Login failed:', error)
+    const errorMsg = error?.response?.data?.message || error?.message || '登录失败，请检查账号密码'
+    errorMessage.value = errorMsg
+    ElMessage.error(errorMsg)
   } finally {
     loading.value = false
   }
@@ -67,5 +88,15 @@ async function handleLogin() {
   text-align: center;
   margin-bottom: 30px;
   color: #303133;
+}
+.error-message {
+  margin-top: 16px;
+  padding: 12px;
+  background: #fef0f0;
+  border: 1px solid #fde2e2;
+  border-radius: 4px;
+  color: #f56c6c;
+  font-size: 14px;
+  text-align: center;
 }
 </style>
