@@ -94,34 +94,34 @@ jobs:
           echo ''
           echo '=== 2/4 Testing login endpoint ==='
           LOGIN_RESULT=$(docker run --rm --network container:elevator-api \
-            alpine:3.19 sh -c "
-              apk add --no-cache curl
+            alpine:3.19 sh -c '
+              apk add --no-cache curl >/dev/null 2>&1
               curl -s -X POST http://localhost:3000/api/auth/login \
-                -H 'Content-Type: application/json' \
-                -d '{\"phone\":\"13800000000\",\"password\":\"admin123\"}'
-            ")
+                -H "Content-Type: application/json" \
+                -d "{\"phone\":\"13800000000\",\"password\":\"admin123\"}"
+            ')
           echo "$LOGIN_RESULT"
           echo "$LOGIN_RESULT" | grep -q '"accessToken"' && echo 'Login: ✅ Token received' || fail 'Login returned no token'
 
           echo ''
           echo '=== 3/4 Testing nginx proxy to admin ==='
           NGINX_ADMIN=$(docker run --rm --network container:elevator-nginx \
-            alpine:3.19 sh -c "
-              apk add --no-cache curl
-              curl -s -o /dev/null -w '%{http_code}' http://localhost:80/
-            ")
+            alpine:3.19 sh -c '
+              apk add --no-cache curl >/dev/null 2>&1
+              curl -s -o /dev/null -w "%{http_code}" http://localhost:80/
+            ')
           echo "HTTP $NGINX_ADMIN"
           [ "$NGINX_ADMIN" = "200" ] && echo 'Nginx → admin: ✅' || fail "Nginx admin returned HTTP $NGINX_ADMIN"
 
           echo ''
           echo '=== 4/4 Testing nginx proxy to API ==='
           NGINX_LOGIN=$(docker run --rm --network container:elevator-nginx \
-            alpine:3.19 sh -c "
-              apk add --no-cache curl
+            alpine:3.19 sh -c '
+              apk add --no-cache curl >/dev/null 2>&1
               curl -s -X POST http://localhost:80/api/auth/login \
-                -H 'Content-Type: application/json' \
-                -d '{\"phone\":\"13800000000\",\"password\":\"admin123\"}'
-            ")
+                -H "Content-Type: application/json" \
+                -d "{\"phone\":\"13800000000\",\"password\":\"admin123\"}"
+            ')
           echo "$NGINX_LOGIN"
           echo "$NGINX_LOGIN" | grep -q '"accessToken"' && echo 'Nginx → API login: ✅ Token received' || fail 'Nginx API login returned no token'
 
