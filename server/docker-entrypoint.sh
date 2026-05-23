@@ -11,10 +11,11 @@ npx prisma generate
 echo "Running database migrations..."
 npx prisma migrate deploy
 
-# Seed data (idempotent: only inserts if no data exists)
+# Seed data
 if [ -f prisma/seed.js ]; then
   echo "Seeding default data..."
-  node prisma/seed.js && echo "Seed completed successfully" || echo "WARNING: Seed script failed (database may already be seeded)"
+  node prisma/seed.js
+  echo "Seed completed successfully"
 fi
 
 echo "Starting application..."
