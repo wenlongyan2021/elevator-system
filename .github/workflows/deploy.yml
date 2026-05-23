@@ -75,6 +75,10 @@ jobs:
               mkdir -p uploads/photos uploads/videos uploads/contracts uploads/exports
 
               echo '=== Building and restarting services ==='
+              # Remove any pre-existing containers that might conflict with compose
+              for c in elevator-tunnel elevator-admin elevator-nginx elevator-api; do
+                docker rm -f "$c" 2>/dev/null || true
+              done
               docker compose -f docker-compose.prod.yml up -d --build --remove-orphans --force-recreate
 
               echo '=== Cleaning old images ==='
