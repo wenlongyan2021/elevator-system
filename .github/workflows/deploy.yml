@@ -118,9 +118,13 @@ jobs:
 
           # All tests run via docker exec on the api container, which already has curl.
           # This avoids Alpine apk download failures when NAS has connectivity issues.
-          echo '=== 1/4 Testing API health ==='
-          docker exec elevator-api curl -sf http://localhost:3000/api \
-            && echo 'API health: OK' || fail 'API health check failed'
+          echo '=== 1/4 Testing API health (waiting up to 60s) ==='
+          for i in $(seq 1 30); do
+            docker exec elevator-api curl -sf http://localhost:3000/api && break
+            [ $i -eq 30 ] && fail 'API health check failed after 60s'
+            sleep 2
+          done
+          echo 'API health: OK'
 
           echo ''
           echo '=== 2/4 Testing login endpoint ==='
