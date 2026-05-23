@@ -129,11 +129,23 @@ export class MonthlyFeeService {
     const [items, total] = await this.prisma.$transaction([
       this.prisma.monthlyFee.findMany({
         where, skip, take: limit, orderBy: { yearMonth: 'desc' },
-        include: { maintenanceUnit: true },
       }),
       this.prisma.monthlyFee.count({ where }),
     ]);
-    return { list: items, total, page, limit };
+
+    // Attach maintenance unit name for display
+    const unitIds = [...new Set(items.map(i => i.maintenanceUnitId))];
+    const units = await this.prisma.maintenanceUnit.findMany({
+      where: { id: { in: unitIds } },
+      select: { id: true, name: true },
+    });
+    const unitMap = Object.fromEntries(units.map(u => [u.id, u]));
+    const list = items.map(item => ({
+      ...item,
+      maintenanceUnit: unitMap[item.maintenanceUnitId] || null,
+    }));
+
+    return { list, total, page, limit };
   }
 
   async findOne(id: string) {
