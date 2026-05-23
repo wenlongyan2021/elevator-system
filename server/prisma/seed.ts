@@ -219,10 +219,12 @@ async function main() {
   })
 
   // -----------------------------------------------------------------------
-  // Sample Repair Orders
+  // Sample Repair Orders (use upsert so re-seeding is safe)
   // -----------------------------------------------------------------------
-  const repair1 = await prisma.repairOrder.create({
-    data: {
+  const repair1 = await prisma.repairOrder.upsert({
+    where: { orderNo: 'BX202605150001' },
+    update: {},
+    create: {
       orderNo: 'BX202605150001', elevatorId: 'elev-a4', reporterId: csWang.id,
       assigneeId: maintainerZhao.id, status: 'PENDING_REPAIR',
       stopType: '停梯', urgency: 'EMERGENCY',
@@ -233,8 +235,10 @@ async function main() {
     data: { repairId: repair1.id, partName: '导靴衬板', quantity: 4, price: 0, costType: 'FREE', remark: '磨损更换' },
   })
 
-  const repair2 = await prisma.repairOrder.create({
-    data: {
+  const repair2 = await prisma.repairOrder.upsert({
+    where: { orderNo: 'BX202605140001' },
+    update: {},
+    create: {
       orderNo: 'BX202605140001', elevatorId: 'elev-a2', reporterId: csWang.id,
       assigneeId: maintainerZhao.id, status: 'APPROVED',
       stopType: '未停梯', urgency: 'NORMAL',
@@ -245,8 +249,10 @@ async function main() {
     data: { repairId: repair2.id, partName: '按钮开关', partModel: 'AN-02', quantity: 5, price: 0, costType: 'FREE' },
   })
 
-  const repair3 = await prisma.repairOrder.create({
-    data: {
+  const repair3 = await prisma.repairOrder.upsert({
+    where: { orderNo: 'BX202605100001' },
+    update: {},
+    create: {
       orderNo: 'BX202605100001', elevatorId: 'elev-b1', reporterId: csWang.id,
       assigneeId: maintainerZhao.id, status: 'RESOLVED', completedAt: new Date('2026-05-12'),
       stopType: '停梯', urgency: 'NORMAL',
@@ -260,8 +266,10 @@ async function main() {
     data: { repairId: repair3.id, costType: 'CONTRACT_IN', amount: 500, description: '门锁维修费' },
   })
 
-  const repair4 = await prisma.repairOrder.create({
-    data: {
+  const repair4 = await prisma.repairOrder.upsert({
+    where: { orderNo: 'BX202605080001' },
+    update: {},
+    create: {
       orderNo: 'BX202605080001', elevatorId: 'elev-c1', reporterId: csWang.id,
       status: 'PENDING_ACCEPT', stopType: '停梯', urgency: 'EMERGENCY',
       description: 'A座客梯困人，1人被困5分钟已救出，需检查电梯状态',
@@ -272,10 +280,12 @@ async function main() {
   })
 
   // -----------------------------------------------------------------------
-  // Workflows for repair orders
+  // Workflows for repair orders (upsert on repairOrderId to handle re-seed)
   // -----------------------------------------------------------------------
-  const wf1 = await prisma.workflowInstance.create({
-    data: { workflowType: 'REPAIR', repairOrderId: repair1.id, currentStep: 'PENDING_REPAIR', status: 'ACTIVE' },
+  const wf1 = await prisma.workflowInstance.upsert({
+    where: { repairOrderId: repair1.id },
+    update: {},
+    create: { workflowType: 'REPAIR', repairOrderId: repair1.id, currentStep: 'PENDING_REPAIR', status: 'ACTIVE' },
   })
   await prisma.workflowNode.createMany({
     data: [
@@ -284,8 +294,10 @@ async function main() {
     ],
   })
 
-  const wf2 = await prisma.workflowInstance.create({
-    data: { workflowType: 'REPAIR', repairOrderId: repair2.id, currentStep: 'APPROVED', status: 'ACTIVE' },
+  const wf2 = await prisma.workflowInstance.upsert({
+    where: { repairOrderId: repair2.id },
+    update: {},
+    create: { workflowType: 'REPAIR', repairOrderId: repair2.id, currentStep: 'APPROVED', status: 'ACTIVE' },
   })
   await prisma.workflowNode.createMany({
     data: [
@@ -296,8 +308,10 @@ async function main() {
     ],
   })
 
-  const wf3 = await prisma.workflowInstance.create({
-    data: { workflowType: 'REPAIR', repairOrderId: repair3.id, currentStep: 'RESOLVED', status: 'COMPLETED' },
+  const wf3 = await prisma.workflowInstance.upsert({
+    where: { repairOrderId: repair3.id },
+    update: {},
+    create: { workflowType: 'REPAIR', repairOrderId: repair3.id, currentStep: 'RESOLVED', status: 'COMPLETED' },
   })
   await prisma.workflowNode.createMany({
     data: [
