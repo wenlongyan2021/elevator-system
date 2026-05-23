@@ -11,7 +11,38 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Network diagnostics
+        run: |
+          echo '=== Runner DNS config ==='
+          cat /etc/resolv.conf 2>/dev/null || echo 'no resolv.conf'
+          echo ''
+          echo '=== DNS resolution test ==='
+          nslookup github.com 2>&1 || true
+          echo ''
+          echo '=== IPv4 connectivity ==='
+          timeout 10 curl -4 -v https://github.com 2>&1 | head -20 || true
+          echo ''
+          echo '=== MTU check ==='
+          ip link 2>/dev/null | head -10 || true
+
+      - name: Checkout with retry
+        uses: actions/checkout@v4
+        continue-on-error: true
+        id: checkout_attempt1
+
+      - name: Retry checkout if failed
+        if: steps.checkout_attempt1.outcome == 'failure'
+        run: |
+          echo 'Checkout failed — waiting 10s then retrying with explicit DNS...'
+          sleep 10
+          git clone -b main --depth 1 https://github.com/wenlongyan2021/elevator-system.git .
+        shell: bash
+
+      - name: Ensure checkout succeeded
+        if: steps.checkout_attempt1.outcome == 'failure'
+        run: |
+          echo 'Verifying checkout...'
+          git log -1 --oneline 2>/dev/null || { echo 'Checkout failed after retry'; exit 1; }
 
       - name: Deploy to NAS
         run: |
@@ -27,6 +58,7 @@ jobs:
             --exclude='uploads' \
             -C "$GITHUB_WORKSPACE" . | \
           docker run --rm -i \
+            --dns 8.8.8.8 --dns 1.1.1.1 \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v /share/CACHEDEV1_DATA:/share/CACHEDEV1_DATA \
             alpine:3.19 sh -c "
@@ -56,6 +88,7 @@ jobs:
         run: |
           sleep 15
           docker run --rm \
+            --dns 8.8.8.8 --dns 1.1.1.1 \
             -v /var/run/docker.sock:/var/run/docker.sock \
             alpine:3.19 sh -c "
               apk add --no-cache docker-cli docker-compose curl
