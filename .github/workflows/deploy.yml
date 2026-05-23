@@ -154,6 +154,20 @@ jobs:
           echo ''
           echo '=== All smoke tests passed ✅ ==='
 
+      - name: API container diagnostics
+        if: failure()
+        run: |
+          echo '=== elevator-api logs (last 80 lines) ==='
+          docker logs elevator-api 2>&1 | tail -80
+
+          echo ''
+          echo '=== elevator-api inspect ==='
+          docker inspect elevator-api --format '{{.State.Status}} {{.State.Restarting}} {{.State.ExitCode}} {{.State.Error}}'
+
+          echo ''
+          echo '=== All containers ==='
+          docker ps --filter 'name=elevator-' --format 'table {{.Names}}\t{{.Status}}'
+
       - name: Show remote access URL
         run: |
           echo '=== Waiting for tunnel to connect ==='
