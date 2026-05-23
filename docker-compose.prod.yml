@@ -94,6 +94,19 @@ services:
       - elevator_uploads:/usr/share/nginx/html/uploads:ro
       - elevator_logs:/var/log/nginx
 
+  tunnel:
+    <<: *common
+    image: cloudflare/cloudflared:latest
+    container_name: elevator-tunnel
+    depends_on:
+      - nginx
+    # Quick tunnel mode — generates a random *.trycloudflare.com URL on each start.
+    # For a stable URL, set TUNNEL_TOKEN env var and switch to named-tunnel mode:
+    #   command: tunnel --token ${TUNNEL_TOKEN} run
+    command: tunnel --url http://nginx:80
+    # environment:
+    #   - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+
 volumes:
   postgres_data:
     driver: local

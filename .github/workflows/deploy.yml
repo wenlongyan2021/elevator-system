@@ -127,3 +127,31 @@ jobs:
 
           echo ''
           echo '=== All smoke tests passed ✅ ==='
+
+      - name: Show remote access URL
+        run: |
+          echo '=== Waiting for tunnel to connect ==='
+          URL=""
+          for i in $(seq 1 15); do
+            URL=$(docker logs elevator-tunnel 2>&1 | grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' | head -1)
+            [ -n "$URL" ] && break
+            sleep 2
+          done
+
+          echo ''
+          echo '=================================================='
+          echo '  🎉 远程访问地址 / Remote Access URL'
+          echo '=================================================='
+          if [ -n "$URL" ]; then
+            echo "  $URL"
+            echo ''
+            echo "  后台管理: $URL"
+            echo "  API接口:  $URL/api/"
+          else
+            echo '  ⚠️  Tunnel URL not yet available.'
+            echo '  Run this to check later:'
+            echo '    docker logs elevator-tunnel 2>&1 | grep trycloudflare'
+          fi
+          echo '=================================================='
+          echo ''
+          echo '默认登录: 13800000000 / admin123'
