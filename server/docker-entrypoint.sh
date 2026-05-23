@@ -7,6 +7,11 @@ echo "=== Elevator System API Entrypoint ==="
 echo "Generating Prisma client..."
 npx prisma generate
 
+# Resolve any failed migrations so the deploy step can retry them
+echo "Resolving any failed migrations..."
+echo 'DELETE FROM "_prisma_migrations" WHERE "finished_at" IS NULL;' | \
+  npx prisma db execute --stdin 2>/dev/null || true
+
 # Run database migrations
 echo "Running database migrations..."
 npx prisma migrate deploy
