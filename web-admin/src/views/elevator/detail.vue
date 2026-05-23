@@ -28,6 +28,8 @@
         <el-descriptions-item label="上次检验日期">{{ elevator.lastInspectDate }}</el-descriptions-item>
         <el-descriptions-item label="下次检验日期">{{ elevator.nextInspectDate }}</el-descriptions-item>
         <el-descriptions-item label="客服">{{ elevator.customerServiceName || elevator.customerService?.name }}</el-descriptions-item>
+        <el-descriptions-item label="安全员">{{ elevator.safetyOfficer?.name ?? '-' }}</el-descriptions-item>
+        <el-descriptions-item label="安全总监">{{ elevator.safetyDirector?.name ?? '-' }}</el-descriptions-item>
         <el-descriptions-item label="维保人员">{{ elevator.maintainerName || elevator.maintainer?.name }}</el-descriptions-item>
       </el-descriptions>
     </el-card>

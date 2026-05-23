@@ -12,6 +12,10 @@ export class MonthlyFeeQueryDto {
 
   @IsOptional()
   @IsString()
+  yearMonth?: string;
+
+  @IsOptional()
+  @IsString()
   status?: string;
 
   @IsOptional()

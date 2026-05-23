@@ -102,10 +102,11 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { repairApi, orgApi } from '@/api'
 
 const router = useRouter()
+const route = useRoute()
 
 interface RepairItem {
   id: string
@@ -133,9 +134,9 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 
 const filters = reactive({
-  status: '',
-  urgency: '',
-  projectId: '',
+  status: (route.query.status as string) || '',
+  urgency: (route.query.urgency as string) || '',
+  projectId: (route.query.projectId as string) || '',
 })
 
 // Status labels and types

@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as QRCode from 'qrcode';
 import { PrismaService } from '../../common/prisma.service';
@@ -39,7 +39,7 @@ export class QRCodeService {
       where: { elevatorId },
     });
     if (existing) {
-      throw new ConflictException('该电梯已生成二维码，如需重新生成请使用重新生成接口');
+      return this.regenerateQR(elevatorId);
     }
 
     const code = this.getQrCodeContent(elevatorId);

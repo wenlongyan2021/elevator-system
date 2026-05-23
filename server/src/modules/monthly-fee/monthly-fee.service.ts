@@ -110,18 +110,27 @@ export class MonthlyFeeService {
   }
 
   async findAll(query: {
-    maintenanceUnitId?: string; projectId?: string; status?: string;
+    maintenanceUnitId?: string; projectId?: string; yearMonth?: string; status?: string;
     page?: number; limit?: number;
   }) {
-    const { maintenanceUnitId, projectId, status, page = 1, limit = 20 } = query;
+    const { maintenanceUnitId, projectId, yearMonth, status, page = 1, limit = 20 } = query;
     const where: any = {};
     if (maintenanceUnitId) where.maintenanceUnitId = maintenanceUnitId;
     if (projectId) where.projectId = projectId;
     if (status) where.status = status;
+    if (yearMonth) {
+      const [year, month] = yearMonth.split('-').map(Number);
+      const start = new Date(year, month - 1, 1, 12, 0, 0);
+      const end = new Date(year, month, 1, 12, 0, 0);
+      where.yearMonth = { gte: start, lt: end };
+    }
 
     const skip = (page - 1) * limit;
     const [items, total] = await this.prisma.$transaction([
-      this.prisma.monthlyFee.findMany({ where, skip, take: limit, orderBy: { yearMonth: 'desc' } }),
+      this.prisma.monthlyFee.findMany({
+        where, skip, take: limit, orderBy: { yearMonth: 'desc' },
+        include: { maintenanceUnit: true },
+      }),
       this.prisma.monthlyFee.count({ where }),
     ]);
     return { list: items, total, page, limit };
@@ -235,7 +244,7 @@ export class MonthlyFeeService {
   }
 
   async exportToExcel(query: {
-    maintenanceUnitId?: string; projectId?: string; status?: string;
+    maintenanceUnitId?: string; projectId?: string; yearMonth?: string; status?: string;
     page?: number; limit?: number;
   }): Promise<Buffer> {
     // Export all matching records (up to 99999)

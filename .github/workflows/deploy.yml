@@ -72,7 +72,7 @@ jobs:
               rsync -a --delete /tmp/code/ '$DEPLOY_DIR/'
 
               cd '$DEPLOY_DIR'
-              mkdir -p uploads/photos uploads/videos uploads/contracts uploads/exports
+              mkdir -p uploads/photos uploads/videos uploads/contracts uploads/exports uploads/qrcodes
 
               echo '=== Building and restarting services ==='
               # Bring down existing stack first to avoid name conflicts

@@ -354,17 +354,6 @@ async function main() {
   await prisma.maintenancePlan.createMany({ data: planData.slice(0, 20), skipDuplicates: true })
 
   // -----------------------------------------------------------------------
-  // QR Codes
-  // -----------------------------------------------------------------------
-  for (const e of elevators) {
-    await prisma.qRCode.upsert({
-      where: { elevatorId: e.id },
-      update: {},
-      create: { elevatorId: e.id, code: `QR-${e.regCode}` },
-    })
-  }
-
-  // -----------------------------------------------------------------------
   // Monthly Fees (for the current month)
   // -----------------------------------------------------------------------
   const currentYM = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -405,7 +394,6 @@ async function main() {
   Repair Orders:    4 (various statuses)
   Workflows:        3
   Maintenance Plans: ${planData.slice(0, 20).length}
-  QR Codes:         ${elevators.length}
   Monthly Fees:     2
 
 👤 Test Accounts:

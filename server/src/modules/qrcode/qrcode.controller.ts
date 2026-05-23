@@ -18,7 +18,7 @@ export class QRCodeController {
   constructor(private readonly qrCodeService: QRCodeService) {}
 
   @Post(':elevatorId')
-  @ApiOperation({ summary: '生成电梯二维码' })
+  @ApiOperation({ summary: '生成电梯二维码（如已存在则重新生成）' })
   async generate(@Param('elevatorId') elevatorId: string) {
     return this.qrCodeService.generateQR(elevatorId);
   }

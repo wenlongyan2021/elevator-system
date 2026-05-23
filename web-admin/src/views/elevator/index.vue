@@ -77,6 +77,12 @@
       <el-table-column prop="building" label="楼栋" width="100" />
       <el-table-column prop="nextInspectDate" label="下次检验日期" width="130" />
       <el-table-column prop="customerServiceName" label="客服" width="100" />
+      <el-table-column label="安全员" width="100">
+        <template #default="{ row }">{{ row.safetyOfficer?.name ?? '-' }}</template>
+      </el-table-column>
+      <el-table-column label="安全总监" width="100">
+        <template #default="{ row }">{{ row.safetyDirector?.name ?? '-' }}</template>
+      </el-table-column>
       <el-table-column prop="maintainerName" label="维保人员" width="100" />
       <el-table-column label="操作" width="200" fixed="right">
         <template #default="{ row }">
@@ -224,6 +230,32 @@
             </el-form-item>
           </el-col>
         </el-row>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="安全员" prop="safetyOfficerId">
+              <el-select v-model="form.safetyOfficerId" filterable clearable style="width: 100%">
+                <el-option
+                  v-for="u in safetyOfficerList"
+                  :key="u.id"
+                  :label="u.name || u.phone"
+                  :value="u.id"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="安全总监" prop="safetyDirectorId">
+              <el-select v-model="form.safetyDirectorId" filterable clearable style="width: 100%">
+                <el-option
+                  v-for="u in safetyDirectorList"
+                  :key="u.id"
+                  :label="u.name || u.phone"
+                  :value="u.id"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -234,13 +266,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { UploadFile, UploadRawFile } from 'element-plus'
 import { elevatorApi, orgApi, userApi, qrcodeApi } from '@/api'
 
 const router = useRouter()
+const route = useRoute()
 
 // ---------- 状态 ----------
 const loading = ref(false)
@@ -258,9 +291,9 @@ const formRef = ref()
 const query = reactive({
   page: 1,
   pageSize: 20,
-  keyword: '',
-  status: '',
-  projectId: '',
+  keyword: (route.query.keyword as string) || '',
+  status: (route.query.status as string) || '',
+  projectId: (route.query.projectId as string) || '',
 })
 
 const defaultForm = {
@@ -277,10 +310,19 @@ const defaultForm = {
   projectId: '',
   building: '',
   customerServiceId: '',
+  safetyOfficerId: '',
+  safetyDirectorId: '',
   maintainerId: '',
 }
 
 const form = reactive({ ...defaultForm })
+
+const safetyOfficerList = computed(() =>
+  userList.value.filter(u => u.role === 'SAFETY_OFFICER')
+)
+const safetyDirectorList = computed(() =>
+  userList.value.filter(u => u.role === 'SAFETY_DIRECTOR')
+)
 
 const rules = {
   regCode: [{ required: true, message: '请输入注册代码' }],
@@ -382,6 +424,8 @@ function openEdit(row: any) {
     projectId: row.projectId || '',
     building: row.building || '',
     customerServiceId: row.customerServiceId || '',
+    safetyOfficerId: row.safetyOfficerId || '',
+    safetyDirectorId: row.safetyDirectorId || '',
     maintainerId: row.maintainerId || '',
   } as typeof defaultForm)
   dialogVisible.value = true

@@ -42,7 +42,7 @@
         </el-table-column>
         <el-table-column prop="status" label="状态" width="100">
           <template #default="scope">
-            <el-tag :type="statusType(scope.row.status)">{{ statusText(scope.row.status) }}</el-tag>
+            <el-tag :type="statusType(scope.row)">{{ statusText(scope.row) }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="200">
@@ -167,8 +167,28 @@ function planTypeText(t: string) {
   const map: Record<string, string> = { HALF_MONTHLY: '半月保', MONTHLY: '月度保', QUARTERLY: '季度保', HALF_YEARLY: '半年保', YEARLY: '年度保' }
   return map[t] || t
 }
-function statusType(s: string) { return s === 'COMPLETED' ? 'success' : s === 'IN_PROGRESS' ? 'warning' : 'info' }
-function statusText(s: string) { return s === 'PENDING' ? '待执行' : s === 'IN_PROGRESS' ? '执行中' : '已完成' }
+function statusType(row: any) {
+  if (row.status === 'COMPLETED') return 'success'
+  if (row.status === 'IN_PROGRESS') return 'warning'
+  const daysDiff = daysUntilPlanDate(row.planDate)
+  if (daysDiff < 0 && Math.abs(daysDiff) > 30) return 'danger'
+  if (daysDiff < 0) return 'warning'
+  return 'success'
+}
+function statusText(row: any) {
+  if (row.status === 'COMPLETED') return '已完成'
+  if (row.status === 'IN_PROGRESS') return '执行中'
+  const daysDiff = daysUntilPlanDate(row.planDate)
+  if (daysDiff < 0 && Math.abs(daysDiff) > 30) return '严重超期'
+  if (daysDiff < 0) return `超期${Math.abs(daysDiff)}天`
+  return '待执行'
+}
+function daysUntilPlanDate(planDate: string): number {
+  if (!planDate) return 0
+  const plan = new Date(planDate)
+  const now = new Date()
+  return Math.floor((plan.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+}
 function getUserName(id: string) { return userMap.value[id] || id }
 
 async function fetchData() {

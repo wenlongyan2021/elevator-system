@@ -18,7 +18,7 @@
     <!-- Stat Cards -->
     <el-row :gutter="20" class="stat-row">
       <el-col :xs="12" :sm="12" :md="6" :xl="4" v-for="item in statCards" :key="item.label">
-        <el-card shadow="hover" class="stat-card" :body-style="{ padding: '20px' }">
+        <el-card shadow="hover" class="stat-card" :body-style="{ padding: '20px' }" @click="router.push(item.to)">
           <div class="stat-inner">
             <div class="stat-icon" :style="{ background: item.bg }">
               <el-icon :size="28" :color="item.color">
@@ -54,7 +54,7 @@
           <template #header>
             <div class="card-header"><span>月度维修趋势</span></div>
           </template>
-          <VChart v-if="repairTrendOption" :option="repairTrendOption" style="height: 300px" autoresize />
+          <VChart v-if="repairTrendOption" :option="repairTrendOption" style="height: 300px" autoresize @chart-click="handleRepairTrendClick" />
           <el-empty v-else description="暂无数据" :image-size="80" />
         </el-card>
       </el-col>
@@ -65,7 +65,7 @@
           <template #header>
             <div class="card-header"><span>电梯状态分布</span></div>
           </template>
-          <VChart v-if="statusDistOption" :option="statusDistOption" style="height: 300px" autoresize />
+          <VChart v-if="statusDistOption" :option="statusDistOption" style="height: 300px" autoresize @chart-click="handleStatusDistClick" />
           <el-empty v-else description="暂无数据" :image-size="80" />
         </el-card>
       </el-col>
@@ -76,7 +76,7 @@
           <template #header>
             <div class="card-header"><span>报修紧急度</span></div>
           </template>
-          <VChart v-if="urgencyOption" :option="urgencyOption" style="height: 300px" autoresize />
+          <VChart v-if="urgencyOption" :option="urgencyOption" style="height: 300px" autoresize @chart-click="handleUrgencyClick" />
           <el-empty v-else description="暂无数据" :image-size="80" />
         </el-card>
       </el-col>
@@ -89,7 +89,7 @@
           <template #header>
             <div class="card-header"><span>故障分布</span></div>
           </template>
-          <VChart v-if="faultDistributionOption" :option="faultDistributionOption" style="height: 300px" autoresize />
+          <VChart v-if="faultDistributionOption" :option="faultDistributionOption" style="height: 300px" autoresize @chart-click="handleFaultDistClick" />
           <el-empty v-else description="暂无数据" :image-size="80" />
         </el-card>
       </el-col>
@@ -125,6 +125,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, shallowRef } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { dashboardApi, repairApi } from '@/api'
 import {
@@ -157,9 +158,11 @@ interface StatCard {
   icon: object
   color: string
   bg: string
+  to: string
 }
 
 // ---------- State ----------
+const router = useRouter()
 const loading = ref(false)
 const reportMonth = ref('')
 const partAlertCount = ref(0)
@@ -173,13 +176,13 @@ const repairStats = ref({ completionRate: 0, urgencyBreakdown: [] as any[], stat
 
 // ---------- Stat Cards ----------
 const statCards = computed<StatCard[]>(() => [
-  { label: '电梯总数', value: overview.value.totalElevators, icon: DataBoard, color: '#409EFF', bg: 'rgba(64,158,255,0.1)' },
-  { label: '运行中', value: overview.value.runningCount, icon: CircleCheck, color: '#67C23A', bg: 'rgba(103,194,58,0.1)' },
-  { label: '已停梯', value: overview.value.stoppedCount, icon: CircleClose, color: '#F56C6C', bg: 'rgba(245,108,108,0.1)' },
-  { label: '故障中', value: overview.value.faultCount, icon: WarningFilled, color: '#E6A23C', bg: 'rgba(230,162,60,0.1)' },
-  { label: '维保中', value: overview.value.maintenanceCount, icon: Opportunity, color: '#9B59B6', bg: 'rgba(155,89,182,0.1)' },
-  { label: '待维修', value: overview.value.pendingRepairs, icon: Sell, color: '#E74C3C', bg: 'rgba(231,76,60,0.1)' },
-  { label: '今日巡查', value: overview.value.todayInspections, icon: Clock, color: '#2ECC71', bg: 'rgba(46,204,113,0.1)' },
+  { label: '电梯总数', value: overview.value.totalElevators, icon: DataBoard, color: '#409EFF', bg: 'rgba(64,158,255,0.1)', to: '/elevator' },
+  { label: '运行中', value: overview.value.runningCount, icon: CircleCheck, color: '#67C23A', bg: 'rgba(103,194,58,0.1)', to: '/elevator?status=RUNNING' },
+  { label: '已停梯', value: overview.value.stoppedCount, icon: CircleClose, color: '#F56C6C', bg: 'rgba(245,108,108,0.1)', to: '/elevator?status=STOPPED' },
+  { label: '故障中', value: overview.value.faultCount, icon: WarningFilled, color: '#E6A23C', bg: 'rgba(230,162,60,0.1)', to: '/elevator?status=FAULT' },
+  { label: '维保中', value: overview.value.maintenanceCount, icon: Opportunity, color: '#9B59B6', bg: 'rgba(155,89,182,0.1)', to: '/elevator?status=MAINTENANCE' },
+  { label: '待维修', value: overview.value.pendingRepairs, icon: Sell, color: '#E74C3C', bg: 'rgba(231,76,60,0.1)', to: '/repair?status=PENDING_ACCEPT' },
+  { label: '今日巡查', value: overview.value.todayInspections, icon: Clock, color: '#2ECC71', bg: 'rgba(46,204,113,0.1)', to: '/inspection' },
 ])
 
 // ---------- Chart Options ----------
@@ -322,6 +325,41 @@ async function handleExportReport() {
   }
 }
 
+// ---------- Chart Click Handlers ----------
+const statusNameMap: Record<string, string> = {
+  '运行中': 'RUNNING', '已停梯': 'STOPPED', '故障': 'FAULT', '维保中': 'MAINTENANCE',
+}
+const urgencyNameMap: Record<string, string> = {
+  '紧急': 'EMERGENCY', '普通': 'NORMAL', '一般': 'LOW',
+}
+const faultNameMap: Record<string, string> = {
+  '门系统故障': 'DOOR_FAULT', '曳引系统': 'TRACTION_FAULT', '控制系统': 'CONTROL_FAULT',
+  '安全保护': 'SAFETY_FAULT', '困人': 'TRAPPED', '其他': 'OTHER',
+}
+
+function handleRepairTrendClick(params: any) {
+  const index = params.dataIndex
+  const data = repairTrendData.value[index]
+  if (data?.month) {
+    router.push(`/repair?month=${data.month}`)
+  }
+}
+
+function handleStatusDistClick(params: any) {
+  const status = statusNameMap[params.name]
+  if (status) router.push(`/elevator?status=${status}`)
+}
+
+function handleUrgencyClick(params: any) {
+  const urgency = urgencyNameMap[params.name]
+  if (urgency) router.push(`/repair?urgency=${urgency}`)
+}
+
+function handleFaultDistClick(params: any) {
+  const faultType = faultNameMap[params.name]
+  if (faultType) router.push(`/repair?faultType=${faultType}`)
+}
+
 onMounted(fetchData)
 </script>
 
@@ -330,7 +368,7 @@ onMounted(fetchData)
 .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 .toolbar-title { font-size: 18px; font-weight: 600; color: #303133; }
 .stat-row { margin-bottom: 20px; }
-.stat-card { border-radius: 8px; transition: transform 0.2s, box-shadow 0.2s; }
+.stat-card { border-radius: 8px; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
 .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
 .stat-inner { display: flex; align-items: center; gap: 16px; }
 .stat-icon { width: 56px; height: 56px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
