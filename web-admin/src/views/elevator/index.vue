@@ -73,7 +73,9 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="projectName" label="所属项目" min-width="140" />
+      <el-table-column label="所属项目" min-width="140">
+        <template #default="{ row }">{{ row.project?.name || '-' }}</template>
+      </el-table-column>
       <el-table-column prop="building" label="楼栋" width="100" />
       <el-table-column prop="nextInspectDate" label="下次检验日期" width="130" />
       <el-table-column prop="customerServiceName" label="客服" width="100" />

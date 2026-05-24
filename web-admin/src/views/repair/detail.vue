@@ -38,7 +38,7 @@
             {{ detail.elevator?.regCode ?? detail.elevator?.registrationCode ?? '-' }}
           </el-descriptions-item>
           <el-descriptions-item label="所在项目">
-            {{ detail.elevator?.projectName ?? '-' }}
+            {{ detail.elevator?.project?.name ?? detail.elevator?.projectName ?? '-' }}
           </el-descriptions-item>
           <el-descriptions-item label="电梯型号">
             {{ detail.elevator?.model ?? '-' }}

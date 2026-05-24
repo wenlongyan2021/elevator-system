@@ -216,7 +216,7 @@
               <el-option
                 v-for="e in availableElevators"
                 :key="e.id"
-                :label="`${e.regCode} - ${e.brand} ${e.model} (${e.projectName || '未分配项目'})`"
+                :label="`${e.regCode} - ${e.brand} ${e.model} (${e.project?.name || '未分配项目'})`"
                 :value="e.id"
               />
             </el-select>
