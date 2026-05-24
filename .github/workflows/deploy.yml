@@ -145,7 +145,7 @@ jobs:
           LOGIN_RESULT=$(docker exec elevator-api \
             curl -s -X POST http://localhost:3000/api/auth/login \
               -H "Content-Type: application/json" \
-              -d '{"phone":"13800000000","password":"admin123"}')
+              -d '{"account":"admin","password":"admin123"}')
           echo "$LOGIN_RESULT"
           echo "$LOGIN_RESULT" | grep -q '"accessToken"' && echo 'Login: ✅ Token received' || fail 'Login returned no token'
 
@@ -161,7 +161,7 @@ jobs:
           NGINX_LOGIN=$(docker exec elevator-api \
             curl -s -X POST http://nginx:80/api/auth/login \
               -H "Content-Type: application/json" \
-              -d '{"phone":"13800000000","password":"admin123"}')
+              -d '{"account":"admin","password":"admin123"}')
           echo "$NGINX_LOGIN"
           echo "$NGINX_LOGIN" | grep -q '"accessToken"' && echo 'Nginx → API login: ✅ Token received' || fail 'Nginx API login returned no token'
 
@@ -208,4 +208,4 @@ jobs:
           fi
           echo '=================================================='
           echo ''
-          echo '默认登录: 13800000000 / admin123'
+          echo '默认登录: admin / admin123（账号密码登录）'
