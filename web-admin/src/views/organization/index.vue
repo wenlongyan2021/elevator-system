@@ -208,10 +208,18 @@ async function saveUser() {
   saving.value = true
   try {
     if (isEditUser.value) {
-      await userApi.updateUser(editUserId.value, userForm.value as any)
+      const data: any = { name: userForm.value.name, role: userForm.value.role }
+      if (userForm.value.projectId) data.projectIds = [userForm.value.projectId]
+      await userApi.updateUser(editUserId.value, data)
       ElMessage.success('更新成功')
     } else {
-      await userApi.createUser(userForm.value as any)
+      const data: any = {
+        name: userForm.value.name,
+        phone: userForm.value.phone,
+        role: userForm.value.role,
+      }
+      if (userForm.value.projectId) data.projectIds = [userForm.value.projectId]
+      await userApi.createUser(data)
       ElMessage.success('创建成功')
     }
     userDialog.value = false
