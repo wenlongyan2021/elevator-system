@@ -458,17 +458,21 @@ async function handleSave() {
     form.evaluationStd = ''
   }
 
+  // 剔除 DTO 中不存在的字段，避免 ValidationPipe forbidNonWhitelisted 拒绝
+  const elevatorIds = [...form.elevatorIds]
+  const payload = { ...form, elevatorIds: undefined, selectedStandards: undefined } as any
+
   saving.value = true
   try {
     if (isEdit.value) {
-      await contractApi.update(editId.value, form)
+      await contractApi.update(editId.value, payload)
       ElMessage.success('更新成功')
     } else {
-      const res: any = await contractApi.create(form)
+      const res: any = await contractApi.create(payload)
       ElMessage.success('创建成功')
       // 如果选择了电梯，关联到合同
-      if (form.elevatorIds && form.elevatorIds.length > 0) {
-        await contractApi.addElevators(res.id, { elevatorIds: form.elevatorIds })
+      if (elevatorIds.length > 0) {
+        await contractApi.addElevators(res.id, { elevatorIds })
         ElMessage.success('电梯关联成功')
       }
     }
