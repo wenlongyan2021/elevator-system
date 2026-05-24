@@ -11,6 +11,7 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @ApiTags('组织架构')
 @ApiBearerAuth()
@@ -108,8 +109,8 @@ export class OrganizationController {
   @Put('users/:id/password')
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: '重置用户密码' })
-  async resetPassword(@Param('id') id: string, @Body() data: { password: string }) {
-    await this.service.resetPassword(id, data.password);
+  async resetPassword(@Param('id') id: string, @Body() dto: ResetPasswordDto) {
+    await this.service.resetPassword(id, dto.password);
     return { message: '密码重置成功' };
   }
 

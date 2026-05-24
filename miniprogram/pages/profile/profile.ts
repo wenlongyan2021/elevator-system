@@ -1,7 +1,7 @@
 Page({
   data: {
     loggedIn: false,
-    phone: '',
+    account: '',
     password: '',
     logging: false,
     userInfo: null,
@@ -24,8 +24,8 @@ Page({
     this.setData({ loggedIn: !!token })
   },
 
-  onPhoneInput(e: any) {
-    this.setData({ phone: e.detail.value })
+  onAccountInput(e: any) {
+    this.setData({ account: e.detail.value })
   },
 
   onPasswordInput(e: any) {
@@ -33,9 +33,9 @@ Page({
   },
 
   async handleLogin() {
-    const { phone, password } = this.data
-    if (!phone || phone.length < 11) {
-      wx.showToast({ title: '请输入正确的手机号', icon: 'none' })
+    const { account, password } = this.data
+    if (!account) {
+      wx.showToast({ title: '请输入账号', icon: 'none' })
       return
     }
     if (!password) {
@@ -46,7 +46,7 @@ Page({
     this.setData({ logging: true })
     try {
       const { authApi } = await import('../../utils/api')
-      const res = await authApi.login(phone, password)
+      const res = await authApi.login(account, password)
 
       wx.setStorageSync('token', res.accessToken)
       const app = getApp()
@@ -127,7 +127,7 @@ Page({
           this.setData({
             loggedIn: false,
             userInfo: null,
-            phone: '',
+            account: '',
             password: '',
           })
         }

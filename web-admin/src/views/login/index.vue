@@ -3,8 +3,8 @@
     <div class="login-card">
       <h2 class="login-title">电梯管理系统</h2>
       <el-form ref="formRef" :model="form" :rules="rules" @submit.prevent="handleLogin">
-        <el-form-item prop="phone">
-          <el-input v-model="form.phone" placeholder="手机号" size="large" />
+        <el-form-item prop="account">
+          <el-input v-model="form.account" placeholder="账号" size="large" />
         </el-form-item>
         <el-form-item prop="password">
           <el-input v-model="form.password" type="password" placeholder="密码" size="large" show-password />
@@ -30,9 +30,9 @@ const loading = ref(false)
 const errorMessage = ref('')
 const formRef = ref()
 
-const form = reactive({ phone: '', password: '' })
+const form = reactive({ account: '', password: '' })
 const rules = {
-  phone: [{ required: true, message: '请输入手机号' }],
+  account: [{ required: true, message: '请输入账号' }],
   password: [{ required: true, message: '请输入密码' }],
 }
 
@@ -47,8 +47,8 @@ async function handleLogin() {
   
   loading.value = true
   try {
-    console.log('[LOGIN] Calling auth.login with:', form.phone)
-    await auth.login(form.phone, form.password)
+    console.log('[LOGIN] Calling auth.login with:', form.account)
+    await auth.login(form.account, form.password)
     console.log('[LOGIN] Login success, auth store updated')
     
     ElMessage.success('登录成功')

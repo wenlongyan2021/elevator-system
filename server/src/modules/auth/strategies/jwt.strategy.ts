@@ -13,10 +13,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: { sub: string; phone: string; role: string }) {
+  async validate(payload: { sub: string; username: string; phone: string; role: string }) {
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
-      select: { id: true, name: true, phone: true, role: true, avatar: true, title: true },
+      select: { id: true, name: true, username: true, phone: true, role: true, avatar: true, title: true },
     });
     if (!user) throw new UnauthorizedException('用户不存在');
     return user;

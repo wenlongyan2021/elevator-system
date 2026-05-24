@@ -20,7 +20,7 @@
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="fetchData">查询</el-button>
+          <el-button type="primary" @click="handleSearch">查询</el-button>
         </el-form-item>
       </el-form>
       <el-table :data="list" v-loading="loading" stripe>
@@ -191,6 +191,11 @@ function daysUntilPlanDate(planDate: string): number {
 }
 function getUserName(id: string) { return userMap.value[id] || id }
 
+function handleSearch() {
+  query.value.page = 1
+  fetchData()
+}
+
 async function fetchData() {
   loading.value = true
   try {
@@ -203,12 +208,17 @@ async function fetchData() {
 }
 
 async function loadOptions() {
-  const [eRes, uRes] = await Promise.all([
-    elevatorApi.list({ page: 1, limit: 999 }),
-    userApi.getUsers({}),
-  ])
-  elevators.value = (eRes as any).list || []
-  users.value = Array.isArray(uRes) ? uRes : (uRes as any).list || []
+  try {
+    const [eRes, uRes] = await Promise.all([
+      elevatorApi.list({ page: 1, limit: 999 }),
+      userApi.getUsers({}),
+    ])
+    elevators.value = (eRes as any).list || []
+    users.value = Array.isArray(uRes) ? uRes : (uRes as any).list || []
+  } catch {
+    elevators.value = []
+    users.value = []
+  }
 }
 
 async function handleSave() {

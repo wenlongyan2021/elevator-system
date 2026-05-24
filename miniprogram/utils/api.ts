@@ -45,11 +45,11 @@ function request<T = any>(options: RequestOptions): Promise<T> {
 }
 
 export const authApi = {
-  login: (phone: string, password: string) =>
+  login: (account: string, password: string) =>
     request<{ accessToken: string; user: any }>({
       url: '/auth/login',
       method: 'POST',
-      data: { phone, password },
+      data: { account, password },
     }),
   wechatLogin: (code: string) =>
     request<{ accessToken: string; user: any }>({

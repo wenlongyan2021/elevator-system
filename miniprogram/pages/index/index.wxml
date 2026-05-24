@@ -10,7 +10,7 @@
   <!-- Login prompt -->
   <view wx:if="{{!loggedIn}}" class="login-prompt card">
     <text class="prompt-text">请先登录以使用全部功能</text>
-    <button class="btn-primary" bindtap="goLogin">手机号登录</button>
+    <button class="btn-primary" bindtap="goLogin">账号登录</button>
   </view>
 
   <!-- Stats Overview -->

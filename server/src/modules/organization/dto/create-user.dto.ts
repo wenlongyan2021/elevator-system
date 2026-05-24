@@ -11,6 +11,11 @@ export class CreateUserDto {
   @IsString()
   phone: string;
 
+  @ApiPropertyOptional({ description: '账号（用于登录，默认使用手机号）' })
+  @IsOptional()
+  @IsString()
+  username?: string;
+
   @ApiPropertyOptional({ description: '密码（默认 123456）' })
   @IsOptional()
   @IsString()

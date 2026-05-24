@@ -76,42 +76,42 @@ async function main() {
   const adminUser = await prisma.user.upsert({
     where: { phone: '13800000000' },
     update: { password: hashedPwd },
-    create: { name: '系统管理员', phone: '13800000000', password: hashedPwd, role: 'ADMIN' },
+    create: { name: '系统管理员', username: 'admin', phone: '13800000000', password: hashedPwd, role: 'ADMIN' },
   })
   const manager = await prisma.user.upsert({
     where: { phone: '13900000001' },
     update: { password: hashedUserPwd },
-    create: { name: '张经理', phone: '13900000001', password: hashedUserPwd, role: 'ADMIN' },
+    create: { name: '张经理', username: 'zhangjl', phone: '13900000001', password: hashedUserPwd, role: 'ADMIN' },
   })
   const csWang = await prisma.user.upsert({
     where: { phone: '13900000002' },
     update: { password: hashedUserPwd },
-    create: { name: '王客服', phone: '13900000002', password: hashedUserPwd, role: 'CUSTOMER_SERVICE' },
+    create: { name: '王客服', username: 'wangkf', phone: '13900000002', password: hashedUserPwd, role: 'CUSTOMER_SERVICE' },
   })
   const engineerLi = await prisma.user.upsert({
     where: { phone: '13900000003' },
     update: { password: hashedUserPwd },
-    create: { name: '李工程', phone: '13900000003', password: hashedUserPwd, role: 'ENGINEER' },
+    create: { name: '李工程', username: 'ligc', phone: '13900000003', password: hashedUserPwd, role: 'ENGINEER' },
   })
   const maintainerZhao = await prisma.user.upsert({
     where: { phone: '13900000004' },
     update: { password: hashedUserPwd, maintenanceUnitId: mu1.id },
-    create: { name: '赵维保', phone: '13900000004', password: hashedUserPwd, role: 'ELEVATOR_MAINTAINER', maintenanceUnitId: mu1.id },
+    create: { name: '赵维保', username: 'zhaowb', phone: '13900000004', password: hashedUserPwd, role: 'ELEVATOR_MAINTAINER', maintenanceUnitId: mu1.id },
   })
   const maintainerQian = await prisma.user.upsert({
     where: { phone: '13900000005' },
     update: { password: hashedUserPwd, maintenanceUnitId: mu2.id },
-    create: { name: '钱维保', phone: '13900000005', password: hashedUserPwd, role: 'ELEVATOR_MAINTAINER', maintenanceUnitId: mu2.id },
+    create: { name: '钱维保', username: 'qianwb', phone: '13900000005', password: hashedUserPwd, role: 'ELEVATOR_MAINTAINER', maintenanceUnitId: mu2.id },
   })
   const safetyOfficer = await prisma.user.upsert({
     where: { phone: '13900000006' },
     update: { password: hashedUserPwd },
-    create: { name: '周安全', phone: '13900000006', password: hashedUserPwd, role: 'SAFETY_OFFICER' },
+    create: { name: '周安全', username: 'zhouaq', phone: '13900000006', password: hashedUserPwd, role: 'SAFETY_OFFICER' },
   })
   const supervisorWu = await prisma.user.upsert({
     where: { phone: '13900000007' },
     update: { password: hashedUserPwd },
-    create: { name: '吴主管', phone: '13900000007', password: hashedUserPwd, role: 'PROJECT_SUPERVISOR' },
+    create: { name: '吴主管', username: 'wuzg', phone: '13900000007', password: hashedUserPwd, role: 'PROJECT_SUPERVISOR' },
   })
 
   // Link users to projects
@@ -397,10 +397,10 @@ async function main() {
   Monthly Fees:     2
 
 👤 Test Accounts:
-  Admin:    13800000000 / admin123
-  Manager:  13900000001 / 123456  (张经理)
-  Maintainer: 13900000004 / 123456 (赵维保)
-  CustomerSvc: 13900000002 / 123456 (王客服)
+  Admin:    admin / admin123  (系统管理员)
+  Manager:  zhangjl / 123456  (张经理)
+  Maintainer: zhaowb / 123456 (赵维保)
+  CustomerSvc: wangkf / 123456 (王客服)
   `)
 }
 

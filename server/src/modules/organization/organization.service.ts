@@ -63,19 +63,21 @@ export class OrganizationService {
   async createUser(data: {
     name: string;
     phone: string;
+    username?: string;
     password?: string;
     role: Role;
     supervisorId?: string;
     maintenanceUnitId?: string;
     projectIds?: string[];
   }) {
-    const hashedPassword = data.password
-      ? await bcrypt.hash(data.password, 10)
-      : await bcrypt.hash('123456', 10);
+    const password = data.password || '123456';
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const username = data.username || data.phone;
 
     const user = await this.prisma.user.create({
       data: {
         name: data.name,
+        username,
         phone: data.phone,
         password: hashedPassword,
         role: data.role,
@@ -108,7 +110,7 @@ export class OrganizationService {
     return this.prisma.user.findMany({
       where,
       select: {
-        id: true, name: true, phone: true, role: true, title: true,
+        id: true, name: true, username: true, phone: true, role: true, title: true,
         avatar: true, isActive: true, supervisorId: true, maintenanceUnitId: true,
         createdAt: true,
       },

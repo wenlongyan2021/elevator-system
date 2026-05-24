@@ -1,7 +1,7 @@
 import request from './request'
 
 export const authApi = {
-  login: (data: { phone: string; password: string }) =>
+  login: (data: { account: string; password: string }) =>
     request.post('/auth/login', data),
   profile: () => request.get('/auth/profile'),
 }
@@ -139,7 +139,7 @@ export const inspectionApi = {
   create: (data: any) => request.post('/inspections', data),
   get: (id: string) => request.get(`/inspections/${id}`),
   exportExcel: (params?: any) =>
-    request.get('/inspections/export', { params, responseType: 'blob' }),
+    request.post('/inspections/export', params, { responseType: 'blob' }),
 }
 
 export const dashboardApi = {

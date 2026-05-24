@@ -6,7 +6,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nes
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { MonthlyFeeService } from './monthly-fee.service';
-import { MonthlyFeeQueryDto, GenerateFeeDto } from './dto/monthly-fee.dto';
+import { MonthlyFeeQueryDto, GenerateFeeDto, UpdateMonthlyFeeStatusDto } from './dto/monthly-fee.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 @ApiTags('月费管理')
@@ -36,8 +36,8 @@ export class MonthlyFeeController {
 
   @Put(':id/status')
   @ApiOperation({ summary: '更新月费状态' })
-  updateStatus(@Param('id') id: string, @Body() body: { status: string }) {
-    return this.service.updateStatus(id, body.status);
+  updateStatus(@Param('id') id: string, @Body() dto: UpdateMonthlyFeeStatusDto) {
+    return this.service.updateStatus(id, dto.status);
   }
 
   @Post('import')
@@ -59,7 +59,7 @@ export class MonthlyFeeController {
 
   @Post('export')
   @ApiOperation({ summary: '导出月费列表为Excel' })
-  async export(@Query() query: MonthlyFeeQueryDto, @Res() res: Response) {
+  async export(@Body() query: MonthlyFeeQueryDto, @Res() res: Response) {
     const buffer = await this.service.exportToExcel(query);
     res.set({
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

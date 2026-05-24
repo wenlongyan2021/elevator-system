@@ -6,7 +6,7 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MaintenancePlanService } from './maintenance-plan.service';
-import { CreateMaintenancePlanDto, BatchCreateMaintenancePlanDto, MaintenancePlanQueryDto } from './dto/maintenance-plan.dto';
+import { CreateMaintenancePlanDto, BatchCreateMaintenancePlanDto, MaintenancePlanQueryDto, UpdateMaintenancePlanStatusDto } from './dto/maintenance-plan.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 @ApiTags('维保计划')
@@ -59,8 +59,8 @@ export class MaintenancePlanController {
 
   @Put(':id/status')
   @ApiOperation({ summary: '更新维保计划状态' })
-  updateStatus(@Param('id') id: string, @Body() body: { status: string }) {
-    return this.service.updateStatus(id, body.status);
+  updateStatus(@Param('id') id: string, @Body() dto: UpdateMaintenancePlanStatusDto) {
+    return this.service.updateStatus(id, dto.status);
   }
 
   @Delete(':id')

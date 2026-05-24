@@ -55,7 +55,8 @@ export class MaintenanceUnitController {
 
   @Post('export')
   @ApiOperation({ summary: '导出维保单位列表为Excel' })
-  async export(@Query() query: { name?: string }, @Res() res: Response) {
+  async export(@Body() body: { name?: string }, @Res() res: Response) {
+    const query = { name: body.name };
     const buffer = await this.service.exportToExcel(query);
     res.set({
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

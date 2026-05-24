@@ -31,8 +31,11 @@ export class MaintenancePlanService {
   }
 
   async batchCreate(dto: BatchCreateMaintenancePlanDto) {
-    const { elevatorIds, planDate, planType, maintainerIds, remark } = dto;
-    
+    const { planDate, planType, maintainerIds, remark } = dto;
+
+    // 去重，避免用户重复选择同一台电梯
+    const elevatorIds = [...new Set(dto.elevatorIds)];
+
     if (elevatorIds.length === 0) {
       throw new BadRequestException('请选择至少一台电梯');
     }
@@ -47,8 +50,8 @@ export class MaintenancePlanService {
     });
 
     if (elevators.length !== elevatorIds.length) {
-      const foundIds = elevators.map(e => e.id);
-      const missingIds = elevatorIds.filter(id => !foundIds.includes(id));
+      const foundIds = new Set(elevators.map(e => e.id));
+      const missingIds = elevatorIds.filter(id => !foundIds.has(id));
       throw new NotFoundException(`电梯 ${missingIds.join(', ')} 不存在`);
     }
 

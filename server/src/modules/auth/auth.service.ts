@@ -12,8 +12,12 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async validateUser(phone: string, password: string) {
-    const user = await this.prisma.user.findUnique({ where: { phone } });
+  async validateUser(account: string, password: string) {
+    // Look up by username first, then phone as fallback
+    let user = await this.prisma.user.findUnique({ where: { username: account } });
+    if (!user) {
+      user = await this.prisma.user.findUnique({ where: { phone: account } });
+    }
     if (!user) return null;
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) return null;
@@ -21,16 +25,13 @@ export class AuthService {
     return result;
   }
 
-  async login(phone: string, password: string) {
-    const user = await this.validateUser(phone, password);
-    if (!user) throw new UnauthorizedException('手机号或密码错误');
+  async login(account: string, password: string) {
+    const user = await this.validateUser(account, password);
+    if (!user) throw new UnauthorizedException('账号或密码错误');
     return this.generateToken(user);
   }
 
   async wechatLogin(code: string, userInfo?: { name?: string; avatar?: string }) {
-    // In production, call WeChat jscode2session API
-    // const session = await this.wechatService.jscode2session(code);
-    // For now, use a mock openId
     const mockOpenId = `mock_openid_${code}`;
 
     let user = await this.prisma.user.findUnique({ where: { wxOpenId: mockOpenId } });
@@ -38,6 +39,7 @@ export class AuthService {
       user = await this.prisma.user.create({
         data: {
           name: userInfo?.name || `微信用户_${code.slice(-4)}`,
+          username: `wx_${code.slice(-10)}`,
           phone: `wx_${code.slice(-10)}`,
           password: await bcrypt.hash('wx_user', 10),
           wxOpenId: mockOpenId,
@@ -51,7 +53,7 @@ export class AuthService {
   }
 
   private generateToken(user: any) {
-    const payload = { sub: user.id, phone: user.phone, role: user.role };
+    const payload = { sub: user.id, username: user.username, phone: user.phone, role: user.role };
     return {
       accessToken: this.jwtService.sign(payload),
       user,
@@ -61,7 +63,7 @@ export class AuthService {
   async getUserById(id: string) {
     return this.prisma.user.findUnique({
       where: { id },
-      select: { id: true, name: true, phone: true, role: true, avatar: true, title: true },
+      select: { id: true, name: true, username: true, phone: true, role: true, avatar: true, title: true },
     });
   }
 }

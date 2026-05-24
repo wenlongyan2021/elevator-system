@@ -100,7 +100,7 @@
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="fetchData">查询</el-button>
+          <el-button type="primary" @click="handleSearch">查询</el-button>
           <el-button @click="resetQuery">重置</el-button>
         </el-form-item>
       </el-form>
@@ -447,14 +447,24 @@ async function handleBatchConfirm() {
     ElMessage.warning('请选择待确认的记录')
     return
   }
-  try {
-    await Promise.all(selectedIds.value.map(id => updateMonthlyFeeStatus(id, 'CONFIRMED')))
-    ElMessage.success(`已确认 ${selectedIds.value.length} 条记录`)
-    selectedIds.value = []
-    fetchData()
-  } catch {
-    ElMessage.error('批量确认失败')
+  let success = 0
+  const errors: string[] = []
+  for (const id of selectedIds.value) {
+    try {
+      await updateMonthlyFeeStatus(id, 'CONFIRMED')
+      success++
+    } catch (e: any) {
+      errors.push(id)
+    }
   }
+  if (success > 0) {
+    ElMessage.success(`已确认 ${success} 条记录${errors.length > 0 ? `，${errors.length} 条失败` : ''}`)
+  }
+  if (errors.length > 0) {
+    console.warn('确认失败的ID:', errors)
+  }
+  selectedIds.value = []
+  fetchData()
 }
 
 function formatMonth(ym: string) {
@@ -509,6 +519,12 @@ async function fetchData() {
 // 快速筛选
 function quickFilter(status: string) {
   query.value.status = status
+  query.value.page = 1
+  fetchData()
+}
+
+// 查询（重置到第一页）
+function handleSearch() {
   query.value.page = 1
   fetchData()
 }
@@ -589,15 +605,23 @@ async function handleGenerate() {
 }
 
 async function handleView(row: any) {
-  const res: any = await getMonthlyFee(row.id)
-  detail.value = res
-  detailVisible.value = true
+  try {
+    const res: any = await getMonthlyFee(row.id)
+    detail.value = res
+    detailVisible.value = true
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.message || '获取月费详情失败')
+  }
 }
 
 async function handleConfirm(row: any, status: string) {
-  await updateMonthlyFeeStatus(row.id, status)
-  ElMessage.success('操作成功')
-  fetchData()
+  try {
+    await updateMonthlyFeeStatus(row.id, status)
+    ElMessage.success('操作成功')
+    fetchData()
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.message || '操作失败')
+  }
 }
 
 async function handleImport() {

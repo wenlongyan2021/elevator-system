@@ -16,7 +16,7 @@ export class AuthController {
   @Post('login')
   @ApiOperation({ summary: '账号密码登录' })
   async login(@Body() dto: LoginDto) {
-    return this.authService.login(dto.phone, dto.password);
+    return this.authService.login(dto.account, dto.password);
   }
 
   @Public()

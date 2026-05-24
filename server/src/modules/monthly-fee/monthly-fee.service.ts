@@ -217,7 +217,7 @@ export class MonthlyFeeService {
           errors.push(`第 ${i + 2} 行: 年月格式无效 "${ymStr}"`);
           continue;
         }
-        const yearMonth = new Date(year, month - 1, 1);
+        const yearMonth = new Date(year, month - 1, 1, 12, 0, 0);
 
         const elevatorCount = Number(row['电梯数量'] || row['elevatorCount'] || 0);
         const unitPrice = Number(row['台/月单价'] || row['unitPrice'] || 0);

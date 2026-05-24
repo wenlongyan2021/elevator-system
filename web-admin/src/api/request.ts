@@ -19,7 +19,7 @@ request.interceptors.request.use((config) => {
 
 async function withRetry(err: any, retries = 2): Promise<any> {
   const config = err.config
-  if (!config || retries <= 0) throw err
+  if (!config || (config.__retryCount || 0) >= retries) throw err
   const method = (config.method || '').toLowerCase()
   const isIdempotent = ['get', 'head', 'options', 'put', 'delete'].includes(method)
   const isRetryable = !err.response || (err.response.status >= 500)

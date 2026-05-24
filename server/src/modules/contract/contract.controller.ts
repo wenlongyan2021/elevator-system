@@ -174,7 +174,7 @@ export class ContractController {
 
   @Post('export')
   @ApiOperation({ summary: '导出合同数据为Excel' })
-  async export(@Query() query: ContractQueryDto, @Res() res: Response) {
+  async export(@Body() query: ContractQueryDto, @Res() res: Response) {
     const buffer = await this.contractService.exportToExcel(query);
     res.set({
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
