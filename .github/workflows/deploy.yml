@@ -79,7 +79,32 @@ jobs:
               docker compose -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || true
               # Force-remove any remaining stale containers
               docker rm -f elevator-tunnel elevator-admin elevator-nginx elevator-api 2>/dev/null || true
-              docker compose -f docker-compose.prod.yml up -d --build --remove-orphans --force-recreate
+              # Release any lingering port bindings (Docker proxy may hold ports briefly)
+              for port in 80 8080 3000; do
+                if lsof -i :$port >/dev/null 2>&1; then
+                  echo "Port $port still in use, waiting 2s..."
+                  sleep 2
+                fi
+              done
+              # Retry up to 3 times to handle transient port binding conflicts
+              for attempt in 1 2 3; do
+                echo "=== docker compose up (attempt $attempt) ==="
+                if docker compose -f docker-compose.prod.yml up -d --build --remove-orphans --force-recreate; then
+                  echo "=== Services started successfully ==="
+                  break
+                fi
+                if [ $attempt -lt 3 ]; then
+                  echo "Attempt $attempt failed, waiting 5s before retry..."
+                  # Check what's blocking ports
+                  for port in 80 8080 3000; do
+                    lsof -i :$port 2>/dev/null || true
+                  done
+                  sleep 5
+                else
+                  echo "=== All 3 attempts failed ==="
+                  exit 1
+                fi
+              done
 
               echo '=== Cleaning old images ==='
               docker image prune -f
