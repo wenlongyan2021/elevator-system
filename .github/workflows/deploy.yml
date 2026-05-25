@@ -33,9 +33,11 @@ jobs:
       - name: Retry checkout if failed
         if: steps.checkout_attempt1.outcome == 'failure'
         run: |
-          echo 'Checkout failed — waiting 10s then retrying with explicit DNS...'
+          echo 'Checkout failed — cleaning up and retrying with explicit DNS...'
           sleep 10
+          rm -rf .git .github 2>/dev/null || true
           git clone -b main --depth 1 https://github.com/wenlongyan2021/elevator-system.git .
+          echo 'Retry clone succeeded'
         shell: bash
 
       - name: Ensure checkout succeeded
