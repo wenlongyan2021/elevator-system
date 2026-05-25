@@ -45,6 +45,8 @@ jobs:
           git log -1 --oneline 2>/dev/null || { echo 'Checkout failed after retry'; exit 1; }
 
       - name: Deploy to NAS
+        env:
+          TUNNEL_TOKEN: ${{ secrets.TUNNEL_TOKEN }}
         run: |
           set -e
           DEPLOY_DIR="/share/CACHEDEV1_DATA/Public/ElevatorSystem"
@@ -61,6 +63,7 @@ jobs:
             --dns 8.8.8.8 --dns 1.1.1.1 \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v /share/CACHEDEV1_DATA:/share/CACHEDEV1_DATA \
+            -e TUNNEL_TOKEN \
             alpine:3.19 sh -c "
               set -e
               apk add --no-cache rsync docker-cli docker-compose tar
@@ -185,10 +188,9 @@ jobs:
       - name: Show remote access URL
         run: |
           echo '=== Waiting for tunnel to connect ==='
-          URL=""
           for i in $(seq 1 15); do
-            URL=$(docker logs elevator-tunnel 2>&1 | grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' | head -1)
-            [ -n "$URL" ] && break
+            status=$(docker logs elevator-tunnel 2>&1 | grep -c 'Registered tunnel connection' || true)
+            [ "$status" -gt 0 ] && break
             sleep 2
           done
 
@@ -196,16 +198,10 @@ jobs:
           echo '=================================================='
           echo '  🎉 远程访问地址 / Remote Access URL'
           echo '=================================================='
-          if [ -n "$URL" ]; then
-            echo "  $URL"
-            echo ''
-            echo "  后台管理: $URL"
-            echo "  API接口:  $URL/api/"
-          else
-            echo '  ⚠️  Tunnel URL not yet available.'
-            echo '  Run this to check later:'
-            echo '    docker logs elevator-tunnel 2>&1 | grep trycloudflare'
-          fi
+          echo '  https://elevator.ruihaoe.cn'
+          echo ''
+          echo "  后台管理: https://elevator.ruihaoe.cn"
+          echo "  API接口:  https://elevator.ruihaoe.cn/api/"
           echo '=================================================='
           echo ''
           echo '默认登录: admin / admin123（账号密码登录）'
