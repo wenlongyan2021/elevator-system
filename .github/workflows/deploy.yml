@@ -193,63 +193,6 @@ jobs:
           echo '=== All containers ==='
           docker ps --filter 'name=elevator-' --format 'table {{.Names}}\t{{.Status}}'
 
-      - name: Tunnel diagnostics
-        run: |
-          echo '=== elevator-tunnel logs (last 30) ==='
-          docker logs elevator-tunnel 2>&1 | tail -30
-
-          echo ''
-          echo '=== elevator-tunnel status ==='
-          docker inspect elevator-tunnel --format 'Status={{.State.Status}} Restarting={{.State.Restarting}} ExitCode={{.State.ExitCode}}'
-
-          echo ''
-          echo '=== elevator-tunnel Cmd ==='
-          docker inspect elevator-tunnel --format '{{json .Config.Cmd}}'
-
-          echo ''
-          echo '=== TUNNEL_TOKEN in .env ==='
-          cat /share/CACHEDEV1_DATA/Public/ElevatorSystem/.env 2>/dev/null | head -3
-
-          echo ''
-          echo '=== All containers ==='
-          docker ps --filter 'name=elevator-' --format 'table {{.Names}}\t{{.Status}}\t{{.Command}}'
-
-      - name: Show remote access URL
-        run: |
-          echo '=== Waiting for tunnel to connect ==='
-          for i in $(seq 1 15); do
-            status=$(docker logs elevator-tunnel 2>&1 | grep -c 'Registered tunnel connection' || true)
-            [ "$status" -gt 0 ] && break
-            sleep 2
-          done
-
-          echo ''
-          echo '=================================================='
-          echo '  🎉 远程访问地址 / Remote Access URL'
-          echo '=================================================='
-          echo '  https://elevator.ruihaoe.cn'
-          echo ''
-          echo "  后台管理: https://elevator.ruihaoe.cn"
-          echo "  API接口:  https://elevator.ruihaoe.cn/api/"
-          echo '=================================================='
-          echo ''
-          echo '默认登录: admin / admin123（账号密码登录）'
-
-      - name: Diagnose docker compose
-        run: |
-          echo '=== Testing docker compose ==='
-          docker run --rm -i \
-            -v /var/run/docker.sock:/var/run/docker.sock \
-            alpine:3.19 sh -c "
-              apk add --no-cache docker-cli docker-cli-compose >/dev/null 2>&1
-              echo '=== which docker ==='
-              which docker
-              echo '=== docker compose version ==='
-              docker compose version 2>&1 || echo 'docker compose failed'
-              echo '=== which docker-compose ==='
-              which docker-compose 2>&1 || echo 'no docker-compose binary'
-            "
-
       - name: Fix tunnel container
         env:
           TUNNEL_TOKEN: ${{ secrets.TUNNEL_TOKEN }}
@@ -272,13 +215,29 @@ jobs:
             tunnel run
 
           echo '=== Tunnel container started ==='
-          sleep 5
-          docker logs elevator-tunnel 2>&1 | tail -10
+          for i in $(seq 1 15); do
+            status=$(docker logs elevator-tunnel 2>&1 | grep -c 'Registered tunnel connection' || true)
+            [ "$status" -gt 0 ] && echo "Tunnel connected after ${i}s" && break
+            sleep 2
+          done
 
-      - name: Diagnose docker compose (post-fix)
+      - name: Verify tunnel
         run: |
           echo '=== elevator-tunnel status ==='
-          docker inspect elevator-tunnel --format 'Status={{.State.Status}} ExitCode={{.State.ExitCode}}' 2>/dev/null || echo 'tunnel not found'
+          docker inspect elevator-tunnel --format 'Status={{.State.Status}} ExitCode={{.State.ExitCode}}'
           echo ''
-          echo '=== All containers ==='
-          docker ps --filter 'name=elevator-' --format 'table {{.Names}}\t{{.Status}}'
+          docker logs elevator-tunnel 2>&1 | grep "Registered tunnel connection" | tail -3
+
+      - name: Show remote access URL
+        run: |
+          echo ''
+          echo '=================================================='
+          echo '  🎉 远程访问地址 / Remote Access URL'
+          echo '=================================================='
+          echo '  https://elevator.ruihaoe.cn'
+          echo ''
+          echo "  后台管理: https://elevator.ruihaoe.cn"
+          echo "  API接口:  https://elevator.ruihaoe.cn/api/"
+          echo '=================================================='
+          echo ''
+          echo '默认登录: admin / admin123（账号密码登录）'
