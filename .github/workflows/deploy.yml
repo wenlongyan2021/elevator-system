@@ -79,6 +79,9 @@ jobs:
               cd '$DEPLOY_DIR'
               mkdir -p uploads/photos uploads/videos uploads/contracts uploads/exports uploads/qrcodes
 
+              echo '=== Creating .env with TUNNEL_TOKEN ==='
+              echo "TUNNEL_TOKEN=${TUNNEL_TOKEN}" > '$DEPLOY_DIR/.env'
+
               echo '=== Building and restarting services ==='
               # Bring down existing stack first to avoid name conflicts
               docker compose -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || true
