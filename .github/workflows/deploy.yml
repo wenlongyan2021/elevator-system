@@ -187,6 +187,23 @@ jobs:
           echo '=== All containers ==='
           docker ps --filter 'name=elevator-' --format 'table {{.Names}}\t{{.Status}}'
 
+      - name: Tunnel diagnostics
+        run: |
+          echo '=== elevator-tunnel logs ==='
+          docker logs elevator-tunnel 2>&1 | tail -40
+
+          echo ''
+          echo '=== elevator-tunnel inspect ==='
+          docker inspect elevator-tunnel --format '{{.State.Status}} {{.State.Restarting}} {{.State.ExitCode}} {{.State.Error}}'
+          echo ''
+          docker inspect elevator-tunnel --format '{{json .Config}}' | python3 -c "
+import sys, json
+cfg = json.load(sys.stdin)
+print('Cmd:', cfg.get('Cmd', []))
+print('Entrypoint:', cfg.get('Entrypoint', []))
+print('Env:', [e for e in cfg.get('Env', []) if 'TOKEN' in e or 'tunnel' in e.lower()])
+"
+
       - name: Show remote access URL
         run: |
           echo '=== Waiting for tunnel to connect ==='
