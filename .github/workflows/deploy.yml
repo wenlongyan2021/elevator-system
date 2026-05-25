@@ -234,3 +234,20 @@ jobs:
           echo '=================================================='
           echo ''
           echo '默认登录: admin / admin123（账号密码登录）'
+
+      - name: Diagnose docker compose
+        run: |
+          echo '=== Testing docker compose ==='
+          docker run --rm -i \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            alpine:3.19 sh -c "
+              apk add --no-cache docker-cli docker-cli-compose >/dev/null 2>&1
+              echo '=== which docker ==='
+              which docker
+              echo '=== docker compose version ==='
+              docker compose version 2>&1 || echo 'docker compose failed'
+              echo '=== which docker-compose ==='
+              which docker-compose 2>&1 || echo 'no docker-compose binary'
+              echo '=== docker ps ==='
+              docker ps --filter 'name=elevator-' --format 'table {{.Names}}\t{{.Status}}'
+            "
