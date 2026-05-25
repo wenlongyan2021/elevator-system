@@ -100,9 +100,10 @@ services:
     container_name: elevator-tunnel
     depends_on:
       - nginx
-    command: tunnel --token ${TUNNEL_TOKEN} run
+    command: tunnel run
     environment:
       - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+      - TUNNEL_CRED_FILE=""
 
 volumes:
   postgres_data:
