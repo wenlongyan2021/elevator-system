@@ -81,6 +81,9 @@ jobs:
 
               echo '=== Creating .env with TUNNEL_TOKEN ==='
               echo "TUNNEL_TOKEN=${TUNNEL_TOKEN}" > '$DEPLOY_DIR/.env'
+              # Verify token is not empty
+              TOKEN_LEN=$(echo -n "$TUNNEL_TOKEN" | wc -c)
+              echo "TUNNEL_TOKEN length: ${TOKEN_LEN}"
 
               echo '=== Building and restarting services ==='
               # Bring down existing stack first to avoid name conflicts
@@ -192,14 +195,24 @@ jobs:
 
       - name: Tunnel diagnostics
         run: |
-          echo '=== elevator-tunnel logs ==='
-          docker logs elevator-tunnel 2>&1 | tail -40
+          echo '=== elevator-tunnel logs (last 30) ==='
+          docker logs elevator-tunnel 2>&1 | tail -30
 
           echo ''
-          echo '=== elevator-tunnel inspect ==='
-          docker inspect elevator-tunnel --format '{{.State.Status}} {{.State.Restarting}} {{.State.ExitCode}} {{.State.Error}}'
+          echo '=== elevator-tunnel status ==='
+          docker inspect elevator-tunnel --format 'Status={{.State.Status}} Restarting={{.State.Restarting}} ExitCode={{.State.ExitCode}}'
+
           echo ''
-          docker inspect elevator-tunnel --format '{{json .Config}}' | python3 -c 'import sys, json; cfg = json.load(sys.stdin); print("Cmd:", cfg.get("Cmd", [])); print("Entrypoint:", cfg.get("Entrypoint", [])); print("Env:", [e for e in cfg.get("Env", []) if "TOKEN" in e or "tunnel" in e.lower()])'
+          echo '=== elevator-tunnel Cmd ==='
+          docker inspect elevator-tunnel --format '{{json .Config.Cmd}}'
+
+          echo ''
+          echo '=== TUNNEL_TOKEN in .env ==='
+          cat /share/CACHEDEV1_DATA/Public/ElevatorSystem/.env 2>/dev/null | head -3
+
+          echo ''
+          echo '=== All containers ==='
+          docker ps --filter 'name=elevator-' --format 'table {{.Names}}\t{{.Status}}\t{{.Command}}'
 
       - name: Show remote access URL
         run: |
