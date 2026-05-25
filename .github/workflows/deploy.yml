@@ -65,7 +65,7 @@ jobs:
             --dns 8.8.8.8 --dns 1.1.1.1 \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v /share/CACHEDEV1_DATA:/share/CACHEDEV1_DATA \
-            -e TUNNEL_TOKEN \
+            -e TUNNEL_TOKEN='${{ secrets.TUNNEL_TOKEN }}' \
             alpine:3.19 sh -c "
               set -e
               apk add --no-cache rsync docker-cli docker-compose tar
