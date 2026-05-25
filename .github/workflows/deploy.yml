@@ -248,6 +248,37 @@ jobs:
               docker compose version 2>&1 || echo 'docker compose failed'
               echo '=== which docker-compose ==='
               which docker-compose 2>&1 || echo 'no docker-compose binary'
-              echo '=== docker ps ==='
-              docker ps --filter 'name=elevator-' --format 'table {{.Names}}\t{{.Status}}'
             "
+
+      - name: Fix tunnel container
+        env:
+          TUNNEL_TOKEN: ${{ secrets.TUNNEL_TOKEN }}
+        run: |
+          set -e
+          echo '=== Stopping old tunnel container ==='
+          docker rm -f elevator-tunnel 2>/dev/null || true
+
+          echo '=== Finding network ==='
+          NETWORK=$(docker inspect elevator-nginx --format '{{range $k,$v := .NetworkSettings.Networks}}{{$k}}{{end}}' 2>/dev/null || echo 'elevator-network')
+          echo "Network: $NETWORK"
+
+          echo '=== Running new tunnel container ==='
+          docker run -d \
+            --name elevator-tunnel \
+            --restart unless-stopped \
+            --network "$NETWORK" \
+            -e TUNNEL_TOKEN \
+            cloudflare/cloudflared:latest \
+            tunnel run
+
+          echo '=== Tunnel container started ==='
+          sleep 5
+          docker logs elevator-tunnel 2>&1 | tail -10
+
+      - name: Diagnose docker compose (post-fix)
+        run: |
+          echo '=== elevator-tunnel status ==='
+          docker inspect elevator-tunnel --format 'Status={{.State.Status}} ExitCode={{.State.ExitCode}}' 2>/dev/null || echo 'tunnel not found'
+          echo ''
+          echo '=== All containers ==='
+          docker ps --filter 'name=elevator-' --format 'table {{.Names}}\t{{.Status}}'
