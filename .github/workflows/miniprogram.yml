@@ -1,0 +1,59 @@
+name: 小程序部署
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'miniprogram/**'
+      - '.github/workflows/miniprogram.yml'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '上传版本号（留空自动生成）'
+        required: false
+        type: string
+      desc:
+        description: '版本描述'
+        required: false
+        default: '自动部署'
+        type: string
+
+jobs:
+  upload:
+    name: 上传小程序
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: 安装 miniprogram-ci
+        run: npm install miniprogram-ci
+        working-directory: ./miniprogram
+
+      - name: 写入上传密钥
+        run: |
+          echo "${{ secrets.WECHAT_PRIVATE_KEY }}" > /tmp/wechat-private.key
+          chmod 600 /tmp/wechat-private.key
+
+      - name: 生成版本号
+        id: version
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=$(date +%Y%m%d.%H%M%S)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 上传小程序
+        env:
+          WECHAT_APPID: ${{ secrets.WECHAT_APPID }}
+          WECHAT_PRIVATE_KEY_PATH: /tmp/wechat-private.key
+          VERSION: ${{ steps.version.outputs.version }}
+          DESC: ${{ inputs.desc || '自动部署' }}
+        run: node .github/scripts/upload-miniprogram.js

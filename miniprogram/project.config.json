@@ -4,7 +4,7 @@
   "setting": {
     "bundle": false,
     "userConfirmedBundleSwitch": false,
-    "urlCheck": true,
+    "urlCheck": false,
     "scopeDataCheck": false,
     "coverView": true,
     "es6": true,
@@ -39,6 +39,16 @@
   "compileType": "miniprogram",
   "libVersion": "3.6.1",
   "appid": "wx0000000000000000",
+  "ci": {
+    "upload": {
+      "compile": true,
+      "setting": {
+        "es6": true,
+        "minify": true,
+        "autoPrefixWXSS": true
+      }
+    }
+  },
   "projectname": "电梯管理系统",
   "condition": {},
   "editorSetting": {

@@ -2,7 +2,7 @@ App<IAppOption>({
   globalData: {
     token: '',
     userInfo: null,
-    baseUrl: 'http://192.168.0.133:3000/api',
+    baseUrl: 'https://elevator.ruihaoe.cn/api',
   },
   onLaunch() {
     const token = wx.getStorageSync('token')
