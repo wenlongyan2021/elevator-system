@@ -1,4 +1,5 @@
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../common/prisma.service';
@@ -10,10 +11,10 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private config: ConfigService,
   ) {}
 
   async validateUser(account: string, password: string) {
-    // Look up by username first, then phone as fallback
     let user = await this.prisma.user.findUnique({ where: { username: account } });
     if (!user) {
       user = await this.prisma.user.findUnique({ where: { phone: account } });
@@ -32,17 +33,36 @@ export class AuthService {
   }
 
   async wechatLogin(code: string, userInfo?: { name?: string; avatar?: string }) {
-    const mockOpenId = `mock_openid_${code}`;
+    const appid = this.config.get<string>('WECHAT_APPID');
+    const secret = this.config.get<string>('WECHAT_SECRET');
 
-    let user = await this.prisma.user.findUnique({ where: { wxOpenId: mockOpenId } });
+    if (!appid || !secret) {
+      this.logger.error('WECHAT_APPID or WECHAT_SECRET not configured');
+      throw new UnauthorizedException('微信登录未配置');
+    }
+
+    // Exchange code for openid via WeChat jscode2session API
+    const url = `https://api.weixin.qq.com/sns/jscode2session?appid=${appid}&secret=${secret}&js_code=${code}&grant_type=authorization_code`;
+    const res = await fetch(url);
+    const data: any = await res.json();
+
+    if (data.errcode || !data.openid) {
+      this.logger.error(`WeChat login failed: errcode=${data.errcode}, errmsg=${data.errmsg}`);
+      throw new UnauthorizedException('微信登录失败，请重新尝试');
+    }
+
+    const openid: string = data.openid;
+    this.logger.log(`WeChat login success: openid=${openid.slice(0, 8)}...`);
+
+    let user = await this.prisma.user.findUnique({ where: { wxOpenId: openid } });
     if (!user) {
       user = await this.prisma.user.create({
         data: {
-          name: userInfo?.name || `微信用户_${code.slice(-4)}`,
-          username: `wx_${code.slice(-10)}`,
-          phone: `wx_${code.slice(-10)}`,
+          name: userInfo?.name || `微信用户_${openid.slice(-4)}`,
+          username: `wx_${openid.slice(-10)}`,
+          phone: `wx_${openid.slice(-10)}`,
           password: await bcrypt.hash('wx_user', 10),
-          wxOpenId: mockOpenId,
+          wxOpenId: openid,
           avatar: userInfo?.avatar,
           role: 'CUSTOMER_SERVICE',
         },

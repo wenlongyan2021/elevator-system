@@ -49,6 +49,8 @@ jobs:
       - name: Deploy to NAS
         env:
           TUNNEL_TOKEN: ${{ secrets.TUNNEL_TOKEN }}
+          WECHAT_APPID: ${{ secrets.WECHAT_APPID }}
+          WECHAT_APP_SECRET: ${{ secrets.WECHAT_APP_SECRET }}
         run: |
           set -e
           DEPLOY_DIR="/share/CACHEDEV1_DATA/Public/ElevatorSystem"
@@ -66,6 +68,8 @@ jobs:
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v /share/CACHEDEV1_DATA:/share/CACHEDEV1_DATA \
             -e TUNNEL_TOKEN='${{ secrets.TUNNEL_TOKEN }}' \
+            -e WECHAT_APPID='${{ secrets.WECHAT_APPID }}' \
+            -e WECHAT_APP_SECRET='${{ secrets.WECHAT_APP_SECRET }}' \
             alpine:3.19 sh -c "
               set -e
               apk add --no-cache rsync docker-cli docker-compose tar
@@ -79,8 +83,10 @@ jobs:
               cd '$DEPLOY_DIR'
               mkdir -p uploads/photos uploads/videos uploads/contracts uploads/exports uploads/qrcodes
 
-              echo '=== Creating .env with TUNNEL_TOKEN ==='
+              echo '=== Creating .env ==='
               echo "TUNNEL_TOKEN=${TUNNEL_TOKEN}" > '$DEPLOY_DIR/.env'
+              echo "WECHAT_APPID=${WECHAT_APPID}" >> '$DEPLOY_DIR/.env'
+              echo "WECHAT_SECRET=${WECHAT_APP_SECRET}" >> '$DEPLOY_DIR/.env'
               # Verify token is not empty
               TOKEN_LEN=$(echo -n "$TUNNEL_TOKEN" | wc -c)
               echo "TUNNEL_TOKEN length: ${TOKEN_LEN}"
