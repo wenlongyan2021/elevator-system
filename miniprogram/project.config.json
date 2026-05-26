@@ -38,7 +38,7 @@
   },
   "compileType": "miniprogram",
   "libVersion": "3.6.1",
-  "appid": "wx0000000000000000",
+  "appid": "wx23be194607448cbe",
   "ci": {
     "upload": {
       "compile": true,
