@@ -45,9 +45,10 @@
             <el-tag :type="statusType(scope.row)">{{ statusText(scope.row) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200">
+        <el-table-column label="操作" width="280">
           <template #default="scope">
             <el-button size="small" v-if="scope.row.status === 'PENDING'" @click="handleStart(scope.row)">开始</el-button>
+            <el-button size="small" v-if="scope.row.status === 'IN_PROGRESS'" type="primary" @click="openRecordDialog(scope.row)">填写保养</el-button>
             <el-button size="small" v-if="scope.row.status === 'IN_PROGRESS'" type="success" @click="handleComplete(scope.row)">完成</el-button>
             <el-button size="small" type="danger" @click="handleDelete(scope.row)">删除</el-button>
           </template>
@@ -126,6 +127,48 @@
         <el-button type="primary" :loading="saving" @click="handleSave">保存</el-button>
       </template>
     </el-dialog>
+
+    <!-- 保养项目填写对话框 -->
+    <el-dialog v-model="recordDialogVisible" title="填写保养项目" width="800px" :close-on-click-modal="false">
+      <div class="record-tip">按 TSG T5002-2017《电梯维护保养规则》要求，请逐项检查并填写结果：</div>
+      <el-form v-if="recordItems.length > 0">
+        <div v-for="(category, catName) in groupedRecordItems" :key="catName" class="record-category">
+          <div class="category-header">{{ catName }}</div>
+          <el-table :data="category" size="small" border>
+            <el-table-column label="编号" width="60" prop="code" />
+            <el-table-column label="保养项目" min-width="200" prop="name" />
+            <el-table-column label="保养要求" min-width="280" prop="description" show-overflow-tooltip />
+            <el-table-column label="结果" width="120">
+              <template #default="{ row }">
+                <el-radio-group v-model="row.checkResult" size="small">
+                  <el-radio label="OK">合格</el-radio>
+                  <el-radio label="NG">不合格</el-radio>
+                  <el-radio label="NA">不适用</el-radio>
+                </el-radio-group>
+              </template>
+            </el-table-column>
+            <el-table-column label="备注" width="140">
+              <template #default="{ row }">
+                <el-input v-model="row.remark" placeholder="选填" size="small" />
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </el-form>
+      <el-empty v-else description="加载保养项目清单失败" />
+      <el-form label-width="100px" style="margin-top: 16px">
+        <el-form-item label="维保小结">
+          <el-input v-model="recordForm.summary" type="textarea" :rows="2" placeholder="本次维保小结（选填）" />
+        </el-form-item>
+        <el-form-item label="异常情况">
+          <el-input v-model="recordForm.abnormalSituations" type="textarea" :rows="2" placeholder="发现异常情况记录（选填）" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="recordDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="recordSaving" @click="handleSubmitRecord">提交并完成</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -134,6 +177,8 @@ import { ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getMaintenancePlans, batchCreateMaintenancePlan, updateMaintenancePlanStatus, deleteMaintenancePlan, importMaintenancePlans, downloadPlanTemplate } from '@/api/maintenance-plan'
 import { elevatorApi, userApi } from '@/api'
+import { maintenanceItemApi } from '@/api/maintenance-item'
+import request from '@/api/request'
 
 const list = ref<any[]>([])
 const total = ref(0)
@@ -158,10 +203,25 @@ const rules = {
   planDate: [{ required: true, message: '请选择日期', trigger: 'change' }],
   planType: [{ required: true, message: '请选择类型', trigger: 'change' }],
   maintainerIds: [
-    { required: true, message: '请选择维保员', trigger: 'change' }, 
+    { required: true, message: '请选择维保员', trigger: 'change' },
     { type: 'array', min: 2, message: '请至少选择2名维保员', trigger: 'change' }
   ],
 }
+
+// 保养记录对话框
+const recordDialogVisible = ref(false)
+const recordSaving = ref(false)
+const currentPlan = ref<any>(null)
+const recordItems = ref<any[]>([])
+const recordForm = ref({ summary: '', abnormalSituations: '' })
+const groupedRecordItems = computed(() => {
+  const g: Record<string, any[]> = {}
+  for (const item of recordItems.value) {
+    if (!g[item.category]) g[item.category] = []
+    g[item.category].push(item)
+  }
+  return g
+})
 
 function planTypeText(t: string) {
   const map: Record<string, string> = { HALF_MONTHLY: '半月保', MONTHLY: '月度保', QUARTERLY: '季度保', HALF_YEARLY: '半年保', YEARLY: '年度保' }
@@ -290,8 +350,58 @@ async function handleImport() {
 }
 
 onMounted(() => { fetchData(); loadOptions() })
-</script>
+
+async function openRecordDialog(row: any) {
+  currentPlan.value = row
+  recordItems.value = []
+  recordForm.value = { summary: '', abnormalSituations: '' }
+  recordDialogVisible.value = true
+  try {
+    const res: any = await maintenanceItemApi.findGroupedByCategory(row.planType)
+    // Convert grouped object to flat array with checkResult field
+    const flat: any[] = []
+    Object.entries(res).forEach(([cat, items]: [string, any[]]) => {
+      for (const item of items) {
+        flat.push({ ...item, checkResult: 'OK', remark: '' })
+      }
+    })
+    recordItems.value = flat
+  } catch {
+    ElMessage.error('加载保养项目失败')
+  }
+}
+
+async function handleSubmitRecord() {
+  recordSaving.value = true
+  try {
+    await request.post('/maintenance-records', {
+        planId: currentPlan.value.id,
+        elevatorId: currentPlan.value.elevatorId,
+        planType: currentPlan.value.planType,
+        maintainerIds: currentPlan.value.maintainerIds,
+        items: recordItems.value.map((item: any) => ({
+          itemId: item.id,
+          checkResult: item.checkResult,
+          remark: item.remark || undefined,
+        })),
+        summary: recordForm.value.summary || undefined,
+        abnormalSituations: recordForm.value.abnormalSituations || undefined,
+      }),
+    })
+    ElMessage.success('保养记录已提交')
+    recordDialogVisible.value = false
+    await updateMaintenancePlanStatus(currentPlan.value.id, 'COMPLETED')
+    fetchData()
+  } catch (e: any) {
+    ElMessage.error(e?.message || '提交失败')
+  } finally {
+    recordSaving.value = false
+  }
+}
 
 <style scoped>
 .page-header { display: flex; justify-content: space-between; align-items: center; }
+.record-tip { color: #E6A23C; font-size: 13px; margin-bottom: 12px; padding: 8px; background: #fdf6ec; border-radius: 4px; }
+.record-category { margin-bottom: 16px; }
+.category-header { font-weight: 600; color: #409EFF; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #EBEEF5; }
 </style>

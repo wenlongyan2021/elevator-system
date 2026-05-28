@@ -63,7 +63,6 @@
       style="width: 100%"
       @row-click="handleRowClick"
     >
-      <el-table-column prop="regCode" label="注册代码" min-width="160" />
       <el-table-column prop="brand" label="品牌" width="120" />
       <el-table-column prop="model" label="型号" width="140" />
       <el-table-column prop="status" label="状态" width="100" align="center">
@@ -77,6 +76,7 @@
         <template #default="{ row }">{{ row.project?.name || '-' }}</template>
       </el-table-column>
       <el-table-column prop="building" label="楼栋" width="100" />
+      <el-table-column prop="regCode" label="注册代码" min-width="160" />
       <el-table-column prop="nextInspectDate" label="下次检验日期" width="130" />
       <el-table-column prop="customerServiceName" label="客服" width="100" />
       <el-table-column label="安全员" width="100">

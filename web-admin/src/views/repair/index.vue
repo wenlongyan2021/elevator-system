@@ -54,6 +54,12 @@
             {{ row.elevator?.regCode ?? row.elevator?.registrationCode ?? '-' }}
           </template>
         </el-table-column>
+        <el-table-column label="所在项目" min-width="140">
+          <template #default="{ row }">{{ row.elevator?.project?.name ?? '-' }}</template>
+        </el-table-column>
+        <el-table-column label="楼栋" width="100">
+          <template #default="{ row }">{{ row.elevator?.building ?? '-' }}</template>
+        </el-table-column>
         <el-table-column label="状态" width="110">
           <template #default="{ row }">
             <el-tag :type="statusType(row.status)" size="small">
@@ -76,6 +82,18 @@
         <el-table-column label="报修人" width="120" prop="reporterName" />
         <el-table-column label="维修人" width="120" prop="assigneeName" />
         <el-table-column label="报修时间" width="170" prop="createdAt" />
+        <el-table-column v-if="hasRescueRows" label="救援时效" width="120">
+          <template #default="{ row }">
+            <template v-if="row.isTrapped">
+              <el-tag :type="rescueTagType(row)" size="small" effect="dark">
+                {{ rescueTagText(row) }}
+              </el-tag>
+            </template>
+            <template v-else-if="row.arrivedAt">
+              <span class="time-num">{{ arrivalMinutes(row) }}分钟</span>
+            </template>
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click.stop="goDetail(row.id)">
@@ -101,7 +119,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { repairApi, orgApi } from '@/api'
 
@@ -176,6 +194,37 @@ function urgencyType(urgency: string): string {
 function truncateText(text: string, maxLen: number): string {
   if (!text) return ''
   return text.length > maxLen ? text.slice(0, maxLen) + '...' : text
+}
+
+// 是否包含需要显示救援时效的行
+const hasRescueRows = computed(() => repairList.value.some(r => r.isTrapped || r.arrivedAt))
+
+function rescueTagType(row: any): string {
+  if (!row.rescueCompletedAt) return 'info'
+  const mins = (new Date(row.rescueCompletedAt).getTime() - new Date(row.createdAt).getTime()) / 60000
+  if (mins <= 120) return 'success'  // 绿
+  if (mins <= 180) return 'warning'  // 黄
+  return 'danger'                    // 红
+}
+
+function rescueTagText(row: any): string {
+  if (!row.createdAt) return '-'
+  const totalMin = row.rescueCompletedAt
+    ? (new Date(row.rescueCompletedAt).getTime() - new Date(row.createdAt).getTime()) / 60000
+    : null
+  if (row.rescueCompletedAt) {
+    const mins = Math.round(totalMin!)
+    if (mins <= 120) return '绿'
+    if (mins <= 180) return `黄${mins}分`
+    return `红${mins}分`
+  }
+  return '进行中'
+}
+
+function arrivalMinutes(row: any): string {
+  if (!row.arrivedAt || !row.createdAt) return '-'
+  const mins = Math.round((new Date(row.arrivedAt).getTime() - new Date(row.createdAt).getTime()) / 60000)
+  return String(mins)
 }
 
 // Fetch projects for filter

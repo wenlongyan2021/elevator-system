@@ -335,6 +335,125 @@ async function main() {
   })
 
   // -----------------------------------------------------------------------
+  // TSG T5002-2017 Maintenance Items (按保养类型)
+  // -----------------------------------------------------------------------
+  const maintenanceItemsData = [
+    // 半月保 (HALF_MONTHLY) - 15项基础项目
+    { planType: 'HALF_MONTHLY', category: '机房', code: 'A1', name: '机房环境', description: '机房干净、整洁，温度不超过40°C，有通风设备', isRequired: true, sortOrder: 1 },
+    { planType: 'HALF_MONTHLY', category: '机房', code: 'A2', name: '控制柜', description: '柜内元器件完好，标识清晰，无异常声响和气味', isRequired: true, sortOrder: 2 },
+    { planType: 'HALF_MONTHLY', category: '机房', code: 'A3', name: '主驱动', description: '曳引机运转正常，无异常振动和噪音，油量充足', isRequired: true, sortOrder: 3 },
+    { planType: 'HALF_MONTHLY', category: '机房', code: 'A4', name: '制动器', description: '制动器动作可靠，制动片厚度符合要求', isRequired: true, sortOrder: 4 },
+    { planType: 'HALF_MONTHLY', category: '机房', code: 'A5', name: '限速器', description: '限速器转动灵活，安全开关动作可靠', isRequired: true, sortOrder: 5 },
+    { planType: 'HALF_MONTHLY', category: '井道', code: 'B1', name: '导靴与导轨', description: '导靴磨损正常，导轨无变形，接缝平整', isRequired: true, sortOrder: 6 },
+    { planType: 'HALF_MONTHLY', category: '井道', code: 'B2', name: '绳槽与钢丝绳', description: '钢丝绳张力均匀，无断丝、断股，润滑良好', isRequired: true, sortOrder: 7 },
+    { planType: 'HALF_MONTHLY', category: '井道', code: 'B3', name: '缓冲器', description: '缓冲器安装牢固，油位/弹性正常', isRequired: true, sortOrder: 8 },
+    { planType: 'HALF_MONTHLY', category: '井道', code: 'B4', name: '对重与平衡重', description: '对重块固定可靠，标识清晰', isRequired: true, sortOrder: 9 },
+    { planType: 'HALF_MONTHLY', category: '层站', code: 'C1', name: '层门', description: '层门机械锁紧装置可靠，门刀与门球间隙合适', isRequired: true, sortOrder: 10 },
+    { planType: 'HALF_MONTHLY', category: '层站', code: 'C2', name: '门机', description: '开关门动作平稳，无异常声响', isRequired: true, sortOrder: 11 },
+    { planType: 'HALF_MONTHLY', category: '层站', code: 'C3', name: '门锁', description: '门锁接触可靠，副门锁动作正常', isRequired: true, sortOrder: 12 },
+    { planType: 'HALF_MONTHLY', category: '轿厢', code: 'D1', name: '轿顶设施', description: '检修盒、急停开关、照明正常', isRequired: true, sortOrder: 13 },
+    { planType: 'HALF_MONTHLY', category: '轿厢', code: 'D2', name: '轿内操纵盘', description: '按钮、指示灯、显示正常，功能完好', isRequired: true, sortOrder: 14 },
+    { planType: 'HALF_MONTHLY', category: '轿厢', code: 'D3', name: '安全钳', description: '安全钳拉杆机构动作可靠', isRequired: true, sortOrder: 15 },
+    { planType: 'HALF_MONTHLY', category: '安全', code: 'E1', name: '急停与安全窗', description: '急停开关、安全窗锁动作可靠', isRequired: true, sortOrder: 16 },
+    { planType: 'HALF_MONTHLY', category: '安全', code: 'E2', name: '超载保护', description: '超载开关动作可靠，警示功能正常', isRequired: false, sortOrder: 17 },
+    { planType: 'HALF_MONTHLY', category: '功能', code: 'F1', name: '底坑设施', description: '急停开关、照明、爬梯安全', isRequired: true, sortOrder: 18 },
+
+    // 季度保养 (QUARTERLY) - 在半月保基础上增加
+    { planType: 'QUARTERLY', category: '机房', code: 'A1', name: '机房环境', description: '机房干净、整洁，温度不超过40°C，有通风设备', isRequired: true, sortOrder: 1 },
+    { planType: 'QUARTERLY', category: '机房', code: 'A2', name: '控制柜接触器', description: '接触器、继电器触点无熔焊，动作灵活', isRequired: true, sortOrder: 2 },
+    { planType: 'QUARTERLY', category: '机房', code: 'A3', name: '主驱动', description: '曳引机运转正常，轴承温度正常，无异常振动', isRequired: true, sortOrder: 3 },
+    { planType: 'QUARTERLY', category: '机房', code: 'A4', name: '制动器', description: '制动器间隙均匀，制动片厚度≥原厚度的2/3', isRequired: true, sortOrder: 4 },
+    { planType: 'QUARTERLY', category: '机房', code: 'A5', name: '限速器', description: '限速器校验有效期内在用，安全开关动作可靠', isRequired: true, sortOrder: 5 },
+    { planType: 'QUARTERLY', category: '机房', code: 'A6', name: '减速器', description: '油量在油标范围内，无渗漏', isRequired: true, sortOrder: 6 },
+    { planType: 'QUARTERLY', category: '井道', code: 'B1', name: '导靴与导轨', description: '导靴磨损正常，对重导靴间隙符合要求', isRequired: true, sortOrder: 7 },
+    { planType: 'QUARTERLY', category: '井道', code: 'B2', name: '钢丝绳', description: '钢丝绳直径不低于公称直径90%，张力差≤5%', isRequired: true, sortOrder: 8 },
+    { planType: 'QUARTERLY', category: '井道', code: 'B3', name: '缓冲器', description: '缓冲器复位试验正常', isRequired: true, sortOrder: 9 },
+    { planType: 'QUARTERLY', category: '井道', code: 'B4', name: '极限开关', description: '极限开关动作可靠', isRequired: true, sortOrder: 10 },
+    { planType: 'QUARTERLY', category: '层站', code: 'C1', name: '层门', description: '门锁啮合深度≥7mm，门刀与门球间隙3-5mm', isRequired: true, sortOrder: 11 },
+    { planType: 'QUARTERLY', category: '层站', code: 'C2', name: '门机', description: '开关门速度、力调正常，触板/光幕灵敏', isRequired: true, sortOrder: 12 },
+    { planType: 'QUARTERLY', category: '层站', code: 'C3', name: '门锁', description: '门锁接触可靠，副门锁动作可靠', isRequired: true, sortOrder: 13 },
+    { planType: 'QUARTERLY', category: '轿厢', code: 'D1', name: '轿顶检修', description: '检修运行、上行按钮、急停正常', isRequired: true, sortOrder: 14 },
+    { planType: 'QUARTERLY', category: '轿厢', code: 'D2', name: '操纵盘', description: '各按钮功能正常，消防功能测试正常', isRequired: true, sortOrder: 15 },
+    { planType: 'QUARTERLY', category: '轿厢', code: 'D3', name: '安全钳', description: '安全钳提拉杆灵活，安全开关动作可靠', isRequired: true, sortOrder: 16 },
+    { planType: 'QUARTERLY', category: '轿厢', code: 'D4', name: '轿底', description: '补偿链/绳磨损正常，固定可靠', isRequired: true, sortOrder: 17 },
+    { planType: 'QUARTERLY', category: '安全', code: 'E1', name: '安全回路', description: '安全回路各开关动作可靠', isRequired: true, sortOrder: 18 },
+    { planType: 'QUARTERLY', category: '安全', code: 'E2', name: '超载保护', description: '超载开关动作可靠，警示功能正常', isRequired: true, sortOrder: 19 },
+    { planType: 'QUARTERLY', category: '功能', code: 'F1', name: '底坑', description: '急停开关、爬梯安全，底坑无积水', isRequired: true, sortOrder: 20 },
+
+    // 半年保养 (HALF_YEARLY) - 在季度保养基础上增加
+    { planType: 'HALF_YEARLY', category: '机房', code: 'A1', name: '机房环境', description: '机房干净、整洁，温度不超过40°C，有通风设备', isRequired: true, sortOrder: 1 },
+    { planType: 'HALF_YEARLY', category: '机房', code: 'A2', name: '控制柜', description: '柜内清洁，各元器件标识清晰，动作可靠', isRequired: true, sortOrder: 2 },
+    { planType: 'HALF_YEARLY', category: '机房', code: 'A3', name: '曳引机', description: '轴承温度正常，无异常振动和噪音，减速器油质正常', isRequired: true, sortOrder: 3 },
+    { planType: 'HALF_YEARLY', category: '机房', code: 'A4', name: '制动器', description: '制动器间隙调整合适，制动片厚度≥原厚度的1/2', isRequired: true, sortOrder: 4 },
+    { planType: 'HALF_YEARLY', category: '机房', code: 'A5', name: '限速器', description: '限速器校验合格，安全开关动作可靠', isRequired: true, sortOrder: 5 },
+    { planType: 'HALF_YEARLY', category: '机房', code: 'A6', name: '电动机', description: '电动机温度正常，无异常声响，风扇完好', isRequired: true, sortOrder: 6 },
+    { planType: 'HALF_YEARLY', category: '机房', code: 'A7', name: '齿轮箱', description: '油量适中，无渗漏，齿轮磨损正常', isRequired: true, sortOrder: 7 },
+    { planType: 'HALF_YEARLY', category: '井道', code: 'B1', name: '导轨', description: '导轨直线度合格，支架固定可靠', isRequired: true, sortOrder: 8 },
+    { planType: 'HALF_YEARLY', category: '井道', code: 'B2', name: '钢丝绳', description: '钢丝绳磨损/断丝符合要求，张力差≤5%', isRequired: true, sortOrder: 9 },
+    { planType: 'HALF_YEARLY', category: '井道', code: 'B3', name: '缓冲器', description: '缓冲器复位试验正常，液压油无变质', isRequired: true, sortOrder: 10 },
+    { planType: 'HALF_YEARLY', category: '井道', code: 'B4', name: '限速器与安全钳', description: '限速器-安全钳联动试验正常', isRequired: true, sortOrder: 11 },
+    { planType: 'HALF_YEARLY', category: '井道', code: 'B5', name: '井道布线', description: '井道布线整齐，线槽固定可靠', isRequired: true, sortOrder: 12 },
+    { planType: 'HALF_YEARLY', category: '层站', code: 'C1', name: '层门', description: '门锁啮合深度≥7mm，门刀与门球间隙3-5mm', isRequired: true, sortOrder: 13 },
+    { planType: 'HALF_YEARLY', category: '层站', code: 'C2', name: '门机', description: '开关门速度平稳，无异常', isRequired: true, sortOrder: 14 },
+    { planType: 'HALF_YEARLY', category: '层站', code: 'C3', name: '门锁', description: '门锁接触可靠，各层门锁啮合一致', isRequired: true, sortOrder: 15 },
+    { planType: 'HALF_YEARLY', category: '层站', code: 'C4', name: '层门地坎', description: '地坎清洁，无积尘', isRequired: true, sortOrder: 16 },
+    { planType: 'HALF_YEARLY', category: '轿厢', code: 'D1', name: '轿顶检修', description: '检修运行、上下按钮、急停可靠', isRequired: true, sortOrder: 17 },
+    { planType: 'HALF_YEARLY', category: '轿厢', code: 'D2', name: '操纵盘', description: '按钮、显示、语音/广播功能正常', isRequired: true, sortOrder: 18 },
+    { planType: 'HALF_YEARLY', category: '轿厢', code: 'D3', name: '安全钳', description: '安全钳提拉机构灵活，安全开关动作可靠', isRequired: true, sortOrder: 19 },
+    { planType: 'HALF_YEARLY', category: '轿厢', code: 'D4', name: '轿底', description: '补偿链/绳磨损正常，固定可靠', isRequired: true, sortOrder: 20 },
+    { planType: 'HALF_YEARLY', category: '轿厢', code: 'D5', name: '轿顶环境', description: '轿顶清洁，无杂物', isRequired: true, sortOrder: 21 },
+    { planType: 'HALF_YEARLY', category: '安全', code: 'E1', name: '安全回路', description: '安全回路各开关动作可靠', isRequired: true, sortOrder: 22 },
+    { planType: 'HALF_YEARLY', category: '安全', code: 'E2', name: '超载保护', description: '超载报警功能正常', isRequired: true, sortOrder: 23 },
+    { planType: 'HALF_YEARLY', category: '安全', code: 'E3', name: '防夹装置', description: '光幕/触板动作灵敏可靠', isRequired: true, sortOrder: 24 },
+    { planType: 'HALF_YEARLY', category: '功能', code: 'F1', name: '底坑', description: '急停开关灵敏，爬梯安全，无积水', isRequired: true, sortOrder: 25 },
+    { planType: 'HALF_YEARLY', category: '功能', code: 'F2', name: '电气测试', description: '绝缘电阻≥0.5MΩ，接地可靠', isRequired: true, sortOrder: 26 },
+
+    // 年度保养 (YEARLY) - 全面检查
+    { planType: 'YEARLY', category: '机房', code: 'A1', name: '机房环境', description: '机房干净整洁，温度≤40°C，通风良好，有挡鼠板', isRequired: true, sortOrder: 1 },
+    { planType: 'YEARLY', category: '机房', code: 'A2', name: '控制柜', description: '元器件无老化，标识清晰，动作可靠', isRequired: true, sortOrder: 2 },
+    { planType: 'YEARLY', category: '机房', code: 'A3', name: '曳引机', description: '轴承磨损正常，无异常振动，噪音≤正常值', isRequired: true, sortOrder: 3 },
+    { planType: 'YEARLY', category: '机房', code: 'A4', name: '制动器', description: '制动器动作可靠，制动片厚度≥原厚度的1/3', isRequired: true, sortOrder: 4 },
+    { planType: 'YEARLY', category: '机房', code: 'A5', name: '限速器', description: '限速器-安全钳联动试验合格，校验有效期内', isRequired: true, sortOrder: 5 },
+    { planType: 'YEARLY', category: '机房', code: 'A6', name: '电动机', description: '电动机温度正常，无异常声响，风扇完好', isRequired: true, sortOrder: 6 },
+    { planType: 'YEARLY', category: '机房', code: 'A7', name: '齿轮箱', description: '油质合格，油量适中，无渗漏', isRequired: true, sortOrder: 7 },
+    { planType: 'YEARLY', category: '机房', code: 'A8', name: '机房照明', description: '照明≥200lx，插座可靠', isRequired: true, sortOrder: 8 },
+    { planType: 'YEARLY', category: '井道', code: 'B1', name: '导轨', description: '导轨直线度、接头台阶合格', isRequired: true, sortOrder: 9 },
+    { planType: 'YEARLY', category: '井道', code: 'B2', name: '钢丝绳', description: '断丝数≤总数2%，直径≥公称直径90%', isRequired: true, sortOrder: 10 },
+    { planType: 'YEARLY', category: '井道', code: 'B3', name: '缓冲器', description: '缓冲器复位试验正常，功能可靠', isRequired: true, sortOrder: 11 },
+    { planType: 'YEARLY', category: '井道', code: 'B4', name: '限速器-安全钳', description: '联动试验合格，动作可靠', isRequired: true, sortOrder: 12 },
+    { planType: 'YEARLY', category: '井道', code: 'B5', name: '对重与平衡重', description: '固定块可靠，标识清晰', isRequired: true, sortOrder: 13 },
+    { planType: 'YEARLY', category: '井道', code: 'B6', name: '井道布线', description: '布线整齐，线槽固定，接地可靠', isRequired: true, sortOrder: 14 },
+    { planType: 'YEARLY', category: '井道', code: 'B7', name: '极限开关', description: '上、下极限开关动作可靠', isRequired: true, sortOrder: 15 },
+    { planType: 'YEARLY', category: '层站', code: 'C1', name: '层门', description: '门锁啮合深度≥7mm，门刀与门球间隙3-5mm', isRequired: true, sortOrder: 16 },
+    { planType: 'YEARLY', category: '层站', code: 'C2', name: '门机', description: '开关门速度正常，力调合适', isRequired: true, sortOrder: 17 },
+    { planType: 'YEARLY', category: '层站', code: 'C3', name: '门锁', description: '门锁接触可靠，副门锁可靠', isRequired: true, sortOrder: 18 },
+    { planType: 'YEARLY', category: '层站', code: 'C4', name: '层门地坎', description: '地坎清洁，无积尘杂物', isRequired: true, sortOrder: 19 },
+    { planType: 'YEARLY', category: '层站', code: 'C5', name: '层门门扇', description: '门扇平整，无变形，开关门平稳', isRequired: true, sortOrder: 20 },
+    { planType: 'YEARLY', category: '轿厢', code: 'D1', name: '轿顶检修', description: '检修运行、各按钮、急停可靠', isRequired: true, sortOrder: 21 },
+    { planType: 'YEARLY', category: '轿厢', code: 'D2', name: '操纵盘', description: '按钮、显示、语音/消防功能正常', isRequired: true, sortOrder: 22 },
+    { planType: 'YEARLY', category: '轿厢', code: 'D3', name: '安全钳', description: '安全钳提拉灵活，开关可靠', isRequired: true, sortOrder: 23 },
+    { planType: 'YEARLY', category: '轿厢', code: 'D4', name: '轿底', description: '补偿链/绳磨损正常，固定可靠', isRequired: true, sortOrder: 24 },
+    { planType: 'YEARLY', category: '轿厢', code: 'D5', name: '轿顶环境', description: '轿顶清洁，无杂物', isRequired: true, sortOrder: 25 },
+    { planType: 'YEARLY', category: '轿厢', code: 'D6', name: '轿内装饰', description: '轿壁、轿门、吊顶完好', isRequired: true, sortOrder: 26 },
+    { planType: 'YEARLY', category: '安全', code: 'E1', name: '安全回路', description: '安全回路各开关动作可靠', isRequired: true, sortOrder: 27 },
+    { planType: 'YEARLY', category: '安全', code: 'E2', name: '超载保护', description: '超载报警、停止功能正常', isRequired: true, sortOrder: 28 },
+    { planType: 'YEARLY', category: '安全', code: 'E3', name: '防夹装置', description: '光幕/触板灵敏可靠', isRequired: true, sortOrder: 29 },
+    { planType: 'YEARLY', category: '安全', code: 'E4', name: '紧急照明', description: '紧急照明≥1lx，持续≥1小时', isRequired: true, sortOrder: 30 },
+    { planType: 'YEARLY', category: '安全', code: 'E5', name: '紧急报警', description: '紧急报警装置与救援通话正常', isRequired: true, sortOrder: 31 },
+    { planType: 'YEARLY', category: '功能', code: 'F1', name: '底坑', description: '急停开关、爬梯安全，无积水', isRequired: true, sortOrder: 32 },
+    { planType: 'YEARLY', category: '功能', code: 'F2', name: '电气测试', description: '绝缘电阻≥0.5MΩ，接地电阻≤4Ω', isRequired: true, sortOrder: 33 },
+    { planType: 'YEARLY', category: '功能', code: 'F3', name: '性能测试', description: '运行速度、平衡系数符合要求', isRequired: true, sortOrder: 34 },
+  ]
+
+  for (const item of maintenanceItemsData) {
+    await prisma.maintenanceItem.upsert({
+      where: { planType_code: { planType: item.planType, code: item.code } },
+      update: {},
+      create: item,
+    })
+  }
+
+  // -----------------------------------------------------------------------
   // Maintenance Plans (next 6 months)
   // -----------------------------------------------------------------------
   const planData: Array<{ elevatorId: string; planDate: Date; planType: string; maintainerIds: string[] }> = []

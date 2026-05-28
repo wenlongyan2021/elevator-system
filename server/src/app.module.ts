@@ -18,6 +18,8 @@ import { NotificationModule } from './modules/notification/notification.module';
 import { MaintenanceUnitModule } from './modules/maintenance-unit/maintenance-unit.module';
 import { MonthlyFeeModule } from './modules/monthly-fee/monthly-fee.module';
 import { MaintenancePlanModule } from './modules/maintenance-plan/maintenance-plan.module';
+import { MaintenanceItemModule } from './modules/maintenance-item/maintenance-item.module';
+import { MaintenanceRecordModule } from './modules/maintenance-record/maintenance-record.module';
 import { ScheduledTasksModule } from './modules/scheduled-tasks/scheduled-tasks.module';
 import { CacheModule } from './modules/cache/cache.module';
 import { AppController } from './app.controller';
@@ -43,6 +45,8 @@ import { AppService } from './app.service';
     MaintenanceUnitModule,
     MonthlyFeeModule,
     MaintenancePlanModule,
+    MaintenanceItemModule,
+    MaintenanceRecordModule,
     ScheduledTasksModule,
     CacheModule,
   ],

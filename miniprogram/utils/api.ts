@@ -74,6 +74,10 @@ export const repairApi = {
     request<any>({ url: '/repairs', method: 'POST', data }),
   accept: (id: string, data: any) =>
     request<any>({ url: `/repairs/${id}/accept`, method: 'PUT', data }),
+  setArrived: (id: string) =>
+    request<any>({ url: `/repairs/${id}/arrived`, method: 'PUT' }),
+  setRescueComplete: (id: string) =>
+    request<any>({ url: `/repairs/${id}/rescue-complete`, method: 'PUT' }),
   complete: (id: string, data: any) =>
     request<any>({ url: `/repairs/${id}/repair`, method: 'PUT', data }),
   getParts: (id: string) => request<any>({ url: `/repairs/${id}/parts` }),
@@ -128,6 +132,16 @@ export const maintenancePlanApi = {
     request<any>({ url: '/maintenance-plans', data: params }),
   updateStatus: (id: string, status: string) =>
     request<any>({ url: `/maintenance-plans/${id}/status`, method: 'PUT', data: { status } }),
+}
+
+export const maintenanceItemApi = {
+  findGroupedByCategory: (planType: string) =>
+    request<any>({ url: `/maintenance-items/grouped/${planType}` }),
+}
+
+export const maintenanceRecordApi = {
+  create: (data: any) =>
+    request<any>({ url: '/maintenance-records', method: 'POST', data }),
 }
 
 export const notificationApi = {

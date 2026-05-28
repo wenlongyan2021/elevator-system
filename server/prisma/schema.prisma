@@ -283,7 +283,9 @@ model RepairOrder {
   trappedCount Int?       // 困人数
   resolveNote String?     // 修复说明
   acceptedAt  DateTime?   // 接单时间
+  arrivedAt   DateTime?   // 维保员到达现场时间
   startedAt   DateTime?   // 开始维修时间
+  rescueCompletedAt DateTime? // 解救困人完成时间
   completedAt DateTime?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
@@ -529,9 +531,64 @@ model MaintenancePlan {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  records         MaintenanceRecord[]
+
   @@index([elevatorId])
   @@index([status])
   @@index([planDate])
+}
+
+// 按 TSG T5002-2017《电梯维护保养规则》定义的四级保养项目清单
+model MaintenanceItem {
+  id            String   @id @default(cuid())
+  planType      String   // HALF_MONTHLY / QUARTERLY / HALF_YEARLY / YEARLY
+  category      String   // 保养项目分类
+  code          String   // 项目编号 如 A1、B2 等
+  name          String   // 保养项目名称
+  description   String?  // 保养要求/说明
+  isRequired    Boolean  @default(true) // 是否必检项
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  recordItems   MaintenanceRecordItem[]
+
+  @@unique([planType, code])
+  @@index([planType])
+}
+
+// 保养记录（每次维保完成后生成）
+model MaintenanceRecord {
+  id                String   @id @default(cuid())
+  planId            String
+  plan              MaintenancePlan @relation(fields: [planId], references: [id])
+  elevatorId        String
+  planType          String
+  maintainerIds     String[]
+  startedAt         DateTime
+  completedAt       DateTime
+  summary           String?  // 维保小结
+  abnormalSituations String? // 异常情况记录
+  isPassed          Boolean  @default(true) // 是否合格
+  operatorId        String   // 执行人
+  createdAt         DateTime @default(now())
+
+  items             MaintenanceRecordItem[]
+
+  @@index([planId])
+}
+
+// 保养记录明细项（记录每一项的检查结果）
+model MaintenanceRecordItem {
+  id              String   @id @default(cuid())
+  recordId        String
+  record          MaintenanceRecord @relation(fields: [recordId], references: [id])
+  itemId          String
+  item            MaintenanceItem @relation(fields: [itemId], references: [id])
+  checkResult     String   // OK / NG / NA  (合格/不合格/不适用)
+  remark         String?  // 检查备注
+  createdAt       DateTime @default(now())
+
+  @@unique([recordId, itemId])
 }
 
 // ==================== Notifications ====================

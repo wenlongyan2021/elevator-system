@@ -119,5 +119,80 @@ Page({
 
   statusText,
   statusType,
+
+  arrivedTimeDisplay(): string {
+    if (!this.data.repair?.arrivedAt) return '待记录'
+    return this.formatTime(this.data.repair.arrivedAt)
+  },
+
+  arrivedTagType(): string {
+    if (!this.data.repair?.createdAt || !this.data.repair?.arrivedAt) return 'info'
+    const arrivedMin = (new Date(this.data.repair.arrivedAt).getTime() - new Date(this.data.repair.createdAt).getTime()) / 60000
+    if (arrivedMin <= 30) return 'success'
+    if (arrivedMin <= 60) return 'warning'
+    return 'danger'
+  },
+
+  rescueAlertMsg(): string {
+    const repair = this.data.repair
+    if (!repair) return ''
+    if (repair.rescueCompletedAt && repair.createdAt) {
+      const totalMin = (new Date(repair.rescueCompletedAt).getTime() - new Date(repair.createdAt).getTime()) / 60000
+      if (totalMin <= 120) return '30分钟内到达，2小时内完成解救'
+      return `超时解救，用时${Math.round(totalMin)}分钟`
+    }
+    if (repair.arrivedAt && repair.createdAt) {
+      const arrivedMin = (new Date(repair.arrivedAt).getTime() - new Date(repair.createdAt).getTime()) / 60000
+      if (arrivedMin > 30) return `到达超时（${Math.round(arrivedMin)}分钟 > 30分钟）`
+      return `到达及时（${Math.round(arrivedMin)}分钟）`
+    }
+    return ''
+  },
+
+  rescueAlertLevel(): string {
+    const repair = this.data.repair
+    if (!repair) return ''
+    if (repair.rescueCompletedAt && repair.createdAt) {
+      const totalMin = (new Date(repair.rescueCompletedAt).getTime() - new Date(repair.createdAt).getTime()) / 60000
+      if (totalMin <= 120) return 'success'
+      if (totalMin <= 180) return 'warning'
+      return 'danger'
+    }
+    if (repair.arrivedAt) {
+      const arrivedMin = (new Date(repair.arrivedAt).getTime() - new Date(repair.createdAt).getTime()) / 60000
+      if (arrivedMin <= 30) return 'success'
+      if (arrivedMin <= 60) return 'warning'
+      return 'danger'
+    }
+    return 'info'
+  },
+
+  formatTime(ts: string): string {
+    if (!ts) return '-'
+    return new Date(ts).toLocaleString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  },
+
+  async handleSetArrived() {
+    try {
+      const { repairApi } = await import('../../utils/api')
+      await repairApi.setArrived(this.data.repair.id)
+      wx.showToast({ title: '已记录到达时间' })
+      this.loadDetail(this.data.repair.id)
+    } catch {
+      wx.showToast({ title: '记录失败', icon: 'none' })
+    }
+  },
+
+  async handleSetRescueComplete() {
+    try {
+      const { repairApi } = await import('../../utils/api')
+      await repairApi.setRescueComplete(this.data.repair.id)
+      wx.showToast({ title: '已记录解救完成' })
+      this.loadDetail(this.data.repair.id)
+    } catch {
+      wx.showToast({ title: '记录失败', icon: 'none' })
+    }
+  },
 })
+
 export {}

@@ -201,6 +201,15 @@ export class RepairService {
       where.workflow = { isNot: null };
     }
 
+    // Sort by project/building, then incomplete repairs by createdAt asc
+    const orderBy = (params.status || params.elevatorId)
+      ? [{ createdAt: 'asc' }]
+      : [
+          { elevator: { project: { name: 'asc' } } },
+          { elevator: { building: 'asc' } },
+          { createdAt: 'asc' },
+        ];
+
     const [items, total] = await Promise.all([
       this.prisma.repairOrder.findMany({
         where,
@@ -218,7 +227,7 @@ export class RepairService {
             select: { id: true, currentStep: true, status: true },
           },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         skip: (page - 1) * limit,
         take: limit,
       }),
@@ -330,6 +339,24 @@ export class RepairService {
     }
 
     return result;
+  }
+
+  async setArrivedAt(id: string, arrivedAt?: string) {
+    const repair = await this.prisma.repairOrder.findUnique({ where: { id } });
+    if (!repair) throw new NotFoundException('报修单不存在');
+    return this.prisma.repairOrder.update({
+      where: { id },
+      data: { arrivedAt: arrivedAt ? new Date(arrivedAt) : new Date() },
+    });
+  }
+
+  async setRescueCompletedAt(id: string, rescueCompletedAt?: string) {
+    const repair = await this.prisma.repairOrder.findUnique({ where: { id } });
+    if (!repair) throw new NotFoundException('报修单不存在');
+    return this.prisma.repairOrder.update({
+      where: { id },
+      data: { rescueCompletedAt: rescueCompletedAt ? new Date(rescueCompletedAt) : new Date() },
+    });
   }
 
   /**

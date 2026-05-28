@@ -108,6 +108,10 @@ export const repairApi = {
   }) => request.get('/repairs/parts-alerts', { params }),
   recommendedParts: (id: string) =>
     request.get(`/repairs/${id}/recommended-parts`),
+  setArrived: (id: string) =>
+    request.put(`/repairs/${id}/arrived`),
+  setRescueComplete: (id: string) =>
+    request.put(`/repairs/${id}/rescue-complete`),
   getMaintainers: () => request.get('/repairs/maintainers'),
 }
 

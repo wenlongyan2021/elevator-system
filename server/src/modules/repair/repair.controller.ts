@@ -30,6 +30,7 @@ import { RepairQueryDto } from './dto/repair-query.dto';
 import { AcceptRepairDto } from './dto/accept-repair.dto';
 import { CompleteRepairDto } from './dto/complete-repair.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
+import { ArrivedAtDto, RescueCompletedDto } from './dto/rescue-time.dto';
 import { AddPartDto } from './dto/add-part.dto';
 import { AddCostDto } from './dto/add-cost.dto';
 
@@ -71,6 +72,18 @@ export class RepairController {
   @ApiOperation({ summary: '分配维修人员' })
   async accept(@Param('id') id: string, @Body() dto: AcceptRepairDto) {
     return this.repairService.acceptRepair(id, dto.assigneeId);
+  }
+
+  @Put(':id/arrived')
+  @ApiOperation({ summary: '维保员到达现场' })
+  async arrived(@Param('id') id: string, @Body() dto: ArrivedAtDto) {
+    return this.repairService.setArrivedAt(id, dto.arrivedAt);
+  }
+
+  @Put(':id/rescue-complete')
+  @ApiOperation({ summary: '解救困人完成' })
+  async rescueComplete(@Param('id') id: string, @Body() dto: RescueCompletedDto) {
+    return this.repairService.setRescueCompletedAt(id, dto.rescueCompletedAt);
   }
 
   @Put(':id/repair')

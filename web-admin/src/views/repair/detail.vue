@@ -128,6 +128,31 @@
           </el-form>
         </div>
 
+        <!-- 困人救援时间记录 -->
+        <div v-if="detail.isTrapped && !detail.rescueCompletedAt" style="margin-bottom: 12px">
+          <el-form label-width="120px">
+            <el-form-item label="到达时间">
+              <el-tag :type="arrivedTagType" size="small">{{ arrivedTimeDisplay }}</el-tag>
+              <el-button size="small" style="margin-left: 8px" @click="handleSetArrived">确认到达</el-button>
+            </el-form-item>
+            <el-form-item label="解救完成时间">
+              <el-button type="success" size="small" @click="handleSetRescueComplete" :disabled="!detail.arrivedAt">确认解救完成</el-button>
+            </el-form-item>
+          </el-form>
+          <div v-if="rescueAlertMsg" :class="['rescue-alert', rescueAlertLevel]">{{ rescueAlertMsg }}</div>
+        </div>
+
+        <!-- 已完成解救状态 -->
+        <div v-if="detail.isTrapped && detail.rescueCompletedAt" style="margin-bottom: 12px">
+          <el-form label-width="120px">
+            <el-form-item label="到达时间">{{ detail.arrivedAt ? formatTime(detail.arrivedAt) : '-' }}</el-form-item>
+            <el-form-item label="解救完成时间">{{ formatTime(detail.rescueCompletedAt) }}</el-form-item>
+            <el-form-item label="救援时效">
+              <el-tag :type="rescueAlertLevel" size="small">{{ rescueAlertMsg }}</el-tag>
+            </el-form-item>
+          </el-form>
+        </div>
+
         <!-- Complete Repair Form -->
         <div v-if="detail.status === 'PENDING_REPAIR'" style="margin-bottom: 12px">
           <el-form ref="repairFormRef" :model="repairForm" :rules="repairRules" label-width="100px">
@@ -583,6 +608,78 @@ const showActions = computed(() => {
   )
 })
 
+// 救援时间计算
+const arrivedTimeDisplay = computed(() => {
+  if (!detail.value?.arrivedAt) return '待记录'
+  return formatTime(detail.value.arrivedAt)
+})
+
+const arrivedTagType = computed(() => {
+  if (!detail.value?.createdAt || !detail.value?.arrivedAt) return 'info'
+  const arrivedMin = (new Date(detail.value.arrivedAt).getTime() - new Date(detail.value.createdAt).getTime()) / 60000
+  if (arrivedMin <= 30) return 'success'
+  if (arrivedMin <= 60) return 'warning'
+  return 'danger'
+})
+
+const rescueAlertMsg = computed(() => {
+  if (!detail.value) return ''
+  if (detail.value.rescueCompletedAt && detail.value.createdAt) {
+    const totalMin = (new Date(detail.value.rescueCompletedAt).getTime() - new Date(detail.value.createdAt).getTime()) / 60000
+    if (totalMin <= 30) return '绿30分钟内到达，2小时内完成解救'
+    if (totalMin <= 120) return `黄用时${Math.round(totalMin)}分钟`
+    return `红超时解救，用时${Math.round(totalMin)}分钟`
+  }
+  if (detail.value.arrivedAt && detail.value.createdAt) {
+    const arrivedMin = (new Date(detail.value.arrivedAt).getTime() - new Date(detail.value.createdAt).getTime()) / 60000
+    if (arrivedMin > 30) return `到达超时（${Math.round(arrivedMin)}分钟 > 30分钟）`
+    return `到达及时（${Math.round(arrivedMin)}分钟）`
+  }
+  return ''
+})
+
+const rescueAlertLevel = computed(() => {
+  if (!detail.value) return ''
+  if (detail.value.rescueCompletedAt && detail.value.createdAt) {
+    const totalMin = (new Date(detail.value.rescueCompletedAt).getTime() - new Date(detail.value.createdAt).getTime()) / 60000
+    if (totalMin <= 120) return 'success'
+    if (totalMin <= 180) return 'warning'
+    return 'danger'
+  }
+  if (detail.value.arrivedAt) {
+    const arrivedMin = (new Date(detail.value.arrivedAt).getTime() - new Date(detail.value.createdAt).getTime()) / 60000
+    if (arrivedMin <= 30) return 'success'
+    if (arrivedMin <= 60) return 'warning'
+    return 'danger'
+  }
+  return 'info'
+})
+
+function formatTime(ts: string): string {
+  if (!ts) return '-'
+  return new Date(ts).toLocaleString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+}
+
+async function handleSetArrived() {
+  try {
+    await repairApi.setArrived(route.params.id as string)
+    ElMessage.success('已记录到达时间')
+    fetchDetail()
+  } catch {
+    ElMessage.error('记录失败')
+  }
+}
+
+async function handleSetRescueComplete() {
+  try {
+    await repairApi.setRescueComplete(route.params.id as string)
+    ElMessage.success('已记录解救完成时间')
+    fetchDetail()
+  } catch {
+    ElMessage.error('记录失败')
+  }
+}
+
 async function fetchDetail() {
   const id = route.params.id as string
   if (!id) {
@@ -865,7 +962,17 @@ onMounted(() => {
   line-height: 1.6;
   color: #333;
 }
-.text-secondary {
+.rescue-alert {
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  margin-top: 8px;
+}
+.rescue-alert.success { background: #f0f9eb; color: #67C23A; border: 1px solid #e1f3d8; }
+.rescue-alert.warning { background: #fdf6ec; color: #E6A23C; border: 1px solid #faecd8; }
+.rescue-alert.danger { background: #fef0f0; color: #F56C6C; border: 1px solid #fde2e2; }
+
+.time-num { font-weight: 600; }
   color: #909399;
   font-size: 13px;
 }

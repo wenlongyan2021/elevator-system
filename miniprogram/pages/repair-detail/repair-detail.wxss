@@ -65,6 +65,21 @@ page { background-color: #f0f2f5; }
   flex: 1;
 }
 
+/* Tag colors */
+.tag-success { color: #67C23A; background: #f0f9eb; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+.tag-warning { color: #E6A23C; background: #fdf6ec; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+.tag-danger { color: #F56C6C; background: #fef0f0; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+.tag-info { color: #909399; background: #f4f4f5; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+
+/* Rescue */
+.btn-row { display: flex; gap: 8px; margin-top: 8px; }
+.small-btn { font-size: 13px; padding: 4px 12px; }
+.btn-success { background: #67C23A; color: #fff; border: none; border-radius: 4px; }
+.rescue-msg { font-size: 13px; padding: 6px 8px; border-radius: 4px; margin-top: 8px; }
+.rescue-success { background: #f0f9eb; color: #67C23A; }
+.rescue-warning { background: #fdf6ec; color: #E6A23C; }
+.rescue-danger { background: #fef0f0; color: #F56C6C; }
+
 /* Picker trigger */
 .picker-trigger {
   padding: 10px 12px;

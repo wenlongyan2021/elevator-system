@@ -40,6 +40,29 @@
       <view class="info-row"><text class="info-label">电话</text><text class="info-value">{{repair.assignee?.phone || '-'}}</text></view>
     </view>
 
+    <!-- 困人救援时间记录 -->
+    <view wx:if="{{repair.isTrapped && !repair.rescueCompletedAt}}" class="card rescue-card">
+      <text class="card-title">救援时效</text>
+      <view class="info-row"><text class="info-label">到达时间</text>
+        <text class="info-value tag-{{arrivedTagType}}">{{repair.arrivedAt ? arrivedTimeDisplay : '待记录'}}</text>
+      </view>
+      <view class="btn-row">
+        <button wx:if="{{!repair.arrivedAt}}" class="btn-primary small-btn" bindtap="handleSetArrived">确认到达</button>
+        <button wx:if="{{repair.arrivedAt}}" class="btn-success small-btn" bindtap="handleSetRescueComplete">确认解救完成</button>
+      </view>
+      <view wx:if="{{rescueAlertMsg}}" class="rescue-msg rescue-{{rescueAlertLevel}}">{{rescueAlertMsg}}</view>
+    </view>
+
+    <!-- 已完成救援状态 -->
+    <view wx:if="{{repair.isTrapped && repair.rescueCompletedAt}}" class="card">
+      <text class="card-title">救援时效</text>
+      <view class="info-row"><text class="info-label">到达时间</text><text class="info-value">{{repair.arrivedAt || '-'}}</text></view>
+      <view class="info-row"><text class="info-label">解救完成</text><text class="info-value">{{repair.rescueCompletedAt}}</text></view>
+      <view class="info-row"><text class="info-label">救援时效</text>
+        <text class="info-value tag-{{rescueAlertLevel}}">{{rescueAlertMsg}}</text>
+      </view>
+    </view>
+
     <!-- Photos -->
     <view wx:if="{{repair.mediaFiles && repair.mediaFiles.length}}" class="card">
       <text class="card-title">现场照片 ({{repair.mediaFiles.length}})</text>
